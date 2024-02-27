@@ -250,7 +250,7 @@ int main(int argc, char** argv, char** env) {
             dut -> B = 5;   // 0101 
             dut -> FuncCode = 14;
             printf("sim_time : %d  A = %d, B = %d, FuncCode = %d, Result = %d\n",sim_time, dut -> A, dut -> B, dut -> FuncCode, dut -> C);
-            if ((sim_time == 31) && (dut -> C == (u_int16_t)~(dut -> A + 1)))
+            if ((sim_time == 31) && (dut -> C == (u_int16_t)(~dut -> A + 1)))
             {
                 printf("Test 16 Passed\n");
                 sum++;
