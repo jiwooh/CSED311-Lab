@@ -1,3 +1,5 @@
+`include "alu_func.v"
+
 module alu #(parameter data_width = 16) (
 	input [data_width - 1 : 0] A, 
 	input [data_width - 1 : 0] B, 
