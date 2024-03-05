@@ -16,16 +16,43 @@ input_total, output_total, return_total,current_total_nxt,wait_time,o_return_coi
 	output reg [`kNumItems-1:0] o_available_item,o_output_item;
 	output reg  [`kTotalBits-1:0] input_total, output_total, return_total,current_total_nxt;
 	integer i;	
+	integer state;
 
 
+	initial begin
+		input_total <= 0;
+		output_total <= 0;
+		return_total <= 0;
+	end
 
-	
+
 	// Combinational logic for the next states
-	always @(*) begin
+	always @(i_input_coin  or o_return_coin or i_select_item) begin
 		// TODO: current_total_nxt
 		// You don't have to worry about concurrent activations in each input vector (or array).
 		// Calculate the next current_total state.
-		
+		if(i_input_coin) begin
+			for(i=0; i < `kNumCoins; i = i + 1) begin
+				if(i_input_coin[i] == 1) begin
+					input_total = input_total + coin_value[i];
+				end
+			end
+		end 
+		else if (o_return_coin) begin
+			for(i=0; i < `kNumCoins; i = i + 1) begin
+				if(o_return_coin[i] == 1) begin
+					return_total = return_total + coin_value[i];
+				end
+			end
+		end 
+		else if (i_select_item) begin
+			for(i = 0; i < `kNumItems; i = i + 1) begin
+				if(i_select_item[i] == 1 && item_price[i] <= balance_total) begin
+					output_total = output_total + item_price[i];
+				end
+			end
+		end
+		current_total_nxt = current_total+input_total-return_total-item_price;
 	end
 
 	
@@ -34,7 +61,18 @@ input_total, output_total, return_total,current_total_nxt,wait_time,o_return_coi
 	always @(*) begin
 		// TODO: o_available_item
 		// TODO: o_output_item
-
+		o_available_item = 0;
+		for(i=0; i < `kNumItems; i = i + 1) begin
+			if(item_price[i] <= balance_total) begin
+				o_available_item[i] = 1;
+			end
+		end
+		o_output_item = 0;
+		for(i = 0; i < `kNumItems; i = i + 1) begin
+			if(i_select_item[i] == 1 && item_price[i] <= balance_total) begin
+				o_output_item[i] = 1;
+			end
+		end
 	end
  
 	
