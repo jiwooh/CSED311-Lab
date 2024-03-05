@@ -1,10 +1,10 @@
 `include "alu_func.v"
 
 module alu #(parameter data_width = 16) (
-	input signed [data_width - 1 : 0] A, 
-	input signed [data_width - 1 : 0] B, 
+	input [data_width - 1 : 0] A, 
+	input [data_width - 1 : 0] B, 
 	input [3 : 0] FuncCode,
-       	output reg signed [data_width - 1: 0] C,
+       	output reg [data_width - 1: 0] C,
        	output reg OverflowFlag);
 // Do not use delay in your implementation.
 
@@ -16,7 +16,7 @@ module alu #(parameter data_width = 16) (
 initial begin
 	C = 0;
 	OverflowFlag = 0;
-end   	
+end
 
 // TODO: You should implement the functionality of ALU!
 // (HINT: Use 'always @(...) begin ... end')
@@ -27,11 +27,11 @@ always @(*) begin
     case (FuncCode)
     `FUNC_ADD: begin
         C = A + B; // ADD
-        OverflowFlag = ((A > 0 && B > 0 && C < 0) || (A < 0 && B < 0 && C > 0)); // handle overflow
+        OverflowFlag = ((A[data_width - 1] == B[data_width - 1] && B[data_width - 1] != C[data_width - 1])); // handle overflow
     end
     `FUNC_SUB: begin
         C = A - B; // SUB
-        OverflowFlag = ((A > 0 && B < 0 && C < 0) || (A < 0 && B > 0 && C > 0)); // handle overflow
+        OverflowFlag = ((A[data_width - 1] != B[data_width - 1] && B[data_width - 1] == C[data_width - 1])); // handle overflow
     end
     `FUNC_ID: begin
         C = A; // ID
