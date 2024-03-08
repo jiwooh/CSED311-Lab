@@ -1,4 +1,3 @@
-
 `include "vending_machine_def.v"
 	
 
@@ -32,9 +31,21 @@ input_total, output_total, return_total,current_total_nxt,wait_time,o_return_coi
 	
 	// Combinational logic for the outputs
 	always @(*) begin
-		// TODO: o_available_item
-		// TODO: o_output_item
+        // TODO: o_available_item
+		o_available_item = 0; // initiate
+        for (i <= 0; i < `kNumItems; i = i + 1) begin
+            if (item_price[i] <= current_total) begin
+                o_available_item[i] = 1;
+            end
+        end
 
+        // TODO: o_output_item
+        o_output_item = 0; // initiate
+        for (i <= 0; i < `kNumItems; i = i + 1) begin
+            if (i_select_item[i] && item_price[i] <= current_total) begin
+                o_output_item[i] = 1;
+            end
+        end
 	end
  
 	
