@@ -15,20 +15,22 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,o_return_coin,
 	reg signed [31:0] wait_time;
 	integer i;
 	integer temp_return_total;
-	integer threeCycleCounter;
+	integer threeCyclesCounter;
+
 	// initiate values
 	initial begin
 		// TODO: initiate values
 		wait_time = `kWaitTime;
 	end
 
-
-	// update coin return time
+	// TODO: o_return_coin
 	always @(*) begin
 		temp_return_total=0;
-
 		o_return_coin=0;
-		if(wait_time <0 || threeCycleCounter ==3) begin
+		// time over: return
+		// triggered: return after three Cycles
+		// caculate coins
+		if(wait_time <0 || threeCyclesCounter ==3) begin
 			for(i=`kNumCoins-1; i>=0; i=i-1) begin
 				if(coin_value[i] <= current_total - temp_return_total) begin
 					o_return_coin[i] = 1;
@@ -38,20 +40,28 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,o_return_coin,
 		end
 	end
 
+	// update time
 	always @(posedge clk ) begin
+		// return after 3 cycles when triggerd
 		if(i_trigger_return==1) begin
-			threeCycleCounter<=threeCycleCounter+1;
+			threeCyclesCounter<=threeCyclesCounter+1;
 		end
 		else begin
-			threeCycleCounter<=0;
+			threeCyclesCounter<=0;
 		end
+
+		// reset time
 		if (!reset_n) begin
 			wait_time <= `kWaitTime;
 		end
+		// decrease time
 		else begin
 			wait_time <= wait_time - 1;
 		end
+		
+		
 
+		// update coin return time when input exists
 		for(i=0; i < `kNumCoins; i = i + 1) begin
 				if(i_input_coin[i] == 1) begin
 					wait_time <= `kWaitTime;

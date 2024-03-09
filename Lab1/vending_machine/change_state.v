@@ -17,7 +17,8 @@ module change_state(clk,reset_n,current_total_nxt,current_total,input_total, out
 		end
 		else begin
 			// TODO: update all states.
-			current_total <= current_total_nxt+input_total-return_total-output_total;
+			// calculate from output of calculate_current_state module
+			current_total <= current_total_nxt + input_total - return_total - output_total;
 		end
 	end
 endmodule 
