@@ -53,10 +53,8 @@ module vending_machine (
 	wire [`kTotalBits-1:0] current_total_nxt;
 
 	
-	// Variables. You may add more your own net variables.
+	// Variables. You may add more your own net variables.s
 	wire [`kTotalBits-1:0] input_total, output_total, return_total;
-	wire [31:0] wait_time;
-
 
 	// This module interface, structure, and given a number of modules are not mandatory but recommended.
 	// However, Implementations that use modules are mandatory.
@@ -65,7 +63,6 @@ module vending_machine (
   									.i_select_item(i_select_item),
 									.clk(clk),
 									.reset_n(reset_n),
-									.wait_time(wait_time),
 									.o_return_coin(o_return_coin),
                                     .current_total(current_total), 
                                     .i_trigger_return(i_trigger_return), 
@@ -77,13 +74,11 @@ module vending_machine (
 										.item_price(item_price),
 										.coin_value(coin_value),
 										.current_total(current_total),
-										.input_total(input_total),
-										.output_total(output_total),
-										.return_total(return_total),
 										.current_total_nxt(current_total_nxt),
-										.wait_time(wait_time),
-                                        .i_trigger_return(i_trigger_return),
-										.o_return_coin(o_return_coin),
+                                        .input_total(input_total),
+                                        .output_total(output_total),
+                                        .return_total(return_total),
+                                        .o_return_coin(o_return_coin),
 										.o_available_item(o_available_item),
 										.o_output_item(o_output_item));
 	
@@ -91,6 +86,9 @@ module vending_machine (
 						.clk(clk),
 						.reset_n(reset_n),
 						.current_total_nxt(current_total_nxt),
+                        .input_total(input_total),
+                        .output_total(output_total),
+                        .return_total(return_total),
 						.current_total(current_total));
 
 
