@@ -15,23 +15,35 @@ module cpu(input reset,                     // positive reset signal
     /***** declarations *****/
     // 1. pc
     
-    wire [31:0] pcValue;
+    wire [31:0] nextpcValue;
+    wire [31:0] pcValue; //use this
 
     // 2. instruction_memory
 
-    wire [31:0] instValue;
+    wire [31:0] instOutput;
     // 3. register_file
 
     // 4. control_unit
 
     // 5. imm gen
-
+    wire [31:0] immgenOutput;
     // 6. alu_control_unit
 
     // 7. alu
     wire [2:0] alu_op;
     wire [31:0] alu_in_1, alu_in_2, alu_result;
     wire alu_bcond;
+
+    //8. etc
+    
+    wire [31:0] adder1Output;
+    wire [31:0] adder2Output;
+    wire [31:0] mux1Output;
+    wire [31:0] mux2Output;
+    wire [31:0] mux3Output;
+    wire [31:0] mux4Output;
+    wire [31:0] mux5Output;
+
 
   /***** Wire declarations *****/
   /***** Register declarations *****/
@@ -44,13 +56,14 @@ module cpu(input reset,                     // positive reset signal
     .next_pc(),     // input
     .current_pc(pcValue)   // output
   );
+
   
   // ---------- Instruction Memory ----------
   instruction_memory imem(
     .reset(reset),   // input
     .clk(clk),     // input
     .addr(pcValue),    // input
-    .dout(instValue)     // output
+    .dout(instOutput)     // output
   );
 
   // ---------- Register File ----------
@@ -85,8 +98,8 @@ module cpu(input reset,                     // positive reset signal
 
   // ---------- Immediate Generator ----------
   immediate_generator imm_gen(
-    .part_of_inst(),  // input
-    .imm_gen_out()    // output
+    .part_of_inst(instOutput),  // input
+    .imm_gen_out(immgenOutput)    // output
   );
 
   // ---------- ALU Control Unit ----------
@@ -113,5 +126,47 @@ module cpu(input reset,                     // positive reset signal
     .mem_read (),   // input
     .mem_write (),  // input
     .dout ()        // output
+  );
+
+  adder adder1(
+    .x1(pcValue),
+    .x2(32'b100),
+    .y(adder1Output)
+  );
+
+  adder adder2(
+    .x1(pcValue),
+    .x2(immgenOutput),
+    .y(adder2Output)
+  );
+  2x1mux 2x1mux1(
+    .x0(adder1Output),
+    .x1(adder2Output),
+    .sel(pcsrc1),
+    .y(mux1Output)
+  );
+  2x1mux 2x1mux2(
+    .x0(),
+    .x1(),
+    .sel(),
+    .y()
+  );
+  2x1mux 2x1mux3(
+    .x0(),
+    .x1(immgenOutput),
+    .sel(),
+    .y()
+  );
+  2x1mux 2x1mux4(
+    .x0(),
+    .x1(),
+    .sel(),
+    .y()
+  );
+  2x1mux 2x1mux5(
+    .x0(),
+    .x1(),
+    .sel(),
+    .y()
   );
 endmodule
