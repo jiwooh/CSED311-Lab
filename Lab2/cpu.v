@@ -13,7 +13,8 @@ module cpu(input reset,                     // positive reset signal
            output is_halted,                // Whehther to finish simulation
            output [31:0] print_reg [0:31]); // TO PRINT REGISTER VALUES IN TESTBENCH (YOU SHOULD NOT USE THIS)
   /***** Wire declarations *****/
-
+  wire [31:0] pcValue;
+  wire [31:0] instValue;
   /***** Register declarations *****/
 
   // ---------- Update program counter ----------
@@ -22,15 +23,15 @@ module cpu(input reset,                     // positive reset signal
     .reset(),       // input (Use reset to initialize PC. Initial value must be 0)
     .clk(),         // input
     .next_pc(),     // input
-    .current_pc()   // output
+    .current_pc(pcValue)   // output
   );
   
   // ---------- Instruction Memory ----------
   instruction_memory imem(
-    .reset(),   // input
-    .clk(),     // input
-    .addr(),    // input
-    .dout()     // output
+    .reset(reset),   // input
+    .clk(clk),     // input
+    .addr(pcValue),    // input
+    .dout(instValue)     // output
   );
 
   // ---------- Register File ----------

@@ -17,6 +17,9 @@ module instruction_memory #(parameter MEM_DEPTH = 1024) (input reset,
   // TODO
   // Asynchronously read instruction from the memory 
   // (use imem_addr to access memory)
+  always(*) begin
+    dout = mem[imem_addr];
+  end
 
   // Initialize instruction memory (do not touch except path)
   always @(posedge clk) begin
@@ -29,7 +32,7 @@ module instruction_memory #(parameter MEM_DEPTH = 1024) (input reset,
         // DO NOT TOUCH COMMENT ABOVE
 
       // Provide path of the file including instructions with binary format
-      $readmemh("/path/to/binary_format/file", mem);
+      $readmemh("/student_tb/basic_rips.txt", mem);
     end
   end
 
