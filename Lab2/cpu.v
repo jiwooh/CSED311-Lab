@@ -22,6 +22,10 @@ module cpu(input reset,                     // positive reset signal
 
     wire [31:0] instOutput;
     // 3. register_file
+    wire [4:0] rs1, rs2, rd;
+    wire [31:0] rd_din;
+    wire write_enable;
+    wire [31:0] rs1_dout, rs2_dout;
 
     // 4. control_unit
 
@@ -68,16 +72,16 @@ module cpu(input reset,                     // positive reset signal
 
   // ---------- Register File ----------
   register_file reg_file (
-    .reset (),        // input
-    .clk (),          // input
-    .rs1 (),          // input
-    .rs2 (),          // input
-    .rd (),           // input
-    .rd_din (),       // input
-    .write_enable (), // input
-    .rs1_dout (),     // output
-    .rs2_dout (),     // output
-    .print_reg (print_reg)  //DO NOT TOUCH THIS
+    .reset(reset),        // input
+    .clk(clk),          // input
+    .rs1(rs1),          // input
+    .rs2(rs1),          // input
+    .rd(rd),           // input
+    .rd_din(rd_din),       // input
+    .write_enable(write_enable), // input
+    .rs1_dout(rs1_dout),     // output
+    .rs2_dout(rs2_dout),     // output
+    .print_reg(print_reg)  //DO NOT TOUCH THIS
   );
 
 
@@ -119,13 +123,13 @@ module cpu(input reset,                     // positive reset signal
 
   // ---------- Data Memory ----------
   data_memory dmem(
-    .reset (),      // input
-    .clk (),        // input
-    .addr (),       // input
-    .din (),        // input
-    .mem_read (),   // input
-    .mem_write (),  // input
-    .dout ()        // output
+    .reset(),      // input
+    .clk(),        // input
+    .addr(),       // input
+    .din(),        // input
+    .mem_read(),   // input
+    .mem_write(),  // input
+    .dout()        // output
   );
 
   adder adder1(
