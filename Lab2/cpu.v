@@ -49,11 +49,11 @@ module cpu(input reset,                     // positive reset signal
     // etc.
     wire [31:0] adder1Output;
     wire [31:0] adder2Output;
-    wire [31:0] 2x1mux1Output;
-    wire [31:0] 2x1mux2Output;
-    wire [31:0] 2x1mux3Output;
-    wire [31:0] 2x1mux4Output;
-    wire [31:0] 2x1mux5Output;
+    wire [31:0] twomux1Output;
+    wire [31:0] twomux2Output;
+    wire [31:0] twomux3Output;
+    wire [31:0] twomux4Output;
+    wire [31:0] twomux5Output;
     wire andGateOutput, orGateOutput;
 
 
@@ -65,7 +65,7 @@ module cpu(input reset,                     // positive reset signal
   pc pc(
     .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
     .clk(clk),         // input
-    .next_pc(2x1mux2Output),     // input
+    .next_pc(twomux2Output),     // input
     .current_pc(pcOutput)   // output
   );
 
@@ -85,7 +85,7 @@ module cpu(input reset,                     // positive reset signal
     .rs1(imemOutput[19:15]),          // input
     .rs2(imemOutput[24:20]),          // input
     .rd(imemOutput[11:7]),           // input
-    .rd_din(2x1mux4Output),       // input
+    .rd_din(twomux4Output),       // input
     .write_enable(write_enable), // input
     .regfileOutputData1(regfileOutputData1),     // output
     .regfileOutputData2(regfileOutputData2),     // output
@@ -124,7 +124,7 @@ module cpu(input reset,                     // positive reset signal
   alu alu (
     .alu_op(alu_op),      // input
     .alu_in_1(regfileOutputData1),    // input  
-    .alu_in_2(2x1mux3Output),    // input
+    .alu_in_2(twomux3Output),    // input
     .alu_result(aluOutput),  // output
     .alu_bcond(alu_bcond)    // output
   );
@@ -151,44 +151,44 @@ module cpu(input reset,                     // positive reset signal
     .x2(immgenOutput),
     .y(adder2Output)
   );
-  2x1mux 2x1mux1(
+  twomux twomux1(
     .x0(adder1Output),
     .x1(adder2Output),
     .sel(orGateOutput),
     .y(mux1Output)
   );
-  2x1mux 2x1mux2(
-    .x0(2x1mux1Output),
+  twomux twomux2(
+    .x0(twomux1Output),
     .x1(aluOutput),
     .sel(is_jalr),
-    .y(2x1mux2Output)
+    .y(twomux2Output)
   );
-  2x1mux 2x1mux3(
+  twomux twomux3(
     .x0(regfileOutputData2),
     .x1(immgenOutput),
     .sel(alu_src),
-    .y(2x1mux3Output)
+    .y(twomux3Output)
   );
-  2x1mux 2x1mux4(
-    .x0(2x1mux5Output),
+  twomux twomux4(
+    .x0(twomux5Output),
     .x1(adder1Output),
     .sel(pc_to_reg),
-    .y(2x1mux4Output)
+    .y(twomux4Output)
   );
-  2x1mux 2x1mux5(
+  twomux twomux5(
     .x0(aluOutput),
     .x1(dmemOutput),
     .sel(mem_to_reg),
-    .y(2x1mux5Output)
+    .y(twomux5Output)
   );
   andGate andGate(
     .x1(branch),
     .x2(alu_bcond),
     .y(andGateOutput)
-  )
+  );
   orGate orGate(
     .x1(is_jal),
     .x2(andGateOutput),
     .y(orGateOutput)
-  )
+  );
 endmodule

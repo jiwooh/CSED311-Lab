@@ -1,4 +1,4 @@
-module 2x1mux (
+module twomux (
     input [31:0] x0, 
     input [31:0] x1, 
     input sel, 
