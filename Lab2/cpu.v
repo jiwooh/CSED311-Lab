@@ -12,9 +12,15 @@ module cpu(input reset,                     // positive reset signal
            input clk,                       // clock signal
            output is_halted,                // Whehther to finish simulation
            output [31:0] print_reg [0:31]); // TO PRINT REGISTER VALUES IN TESTBENCH (YOU SHOULD NOT USE THIS)
-  /***** Wire declarations *****/
+    /***** declarations *****/
 
-  /***** Register declarations *****/
+    // 5. alu_control_unit
+
+    // 6. alu
+    wire [2:0] alu_op;
+    wire [31:0] alu_in_1, alu_in_2, alu_result;
+    wire alu_bcond;
+
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -77,11 +83,11 @@ module cpu(input reset,                     // positive reset signal
 
   // ---------- ALU ----------
   alu alu (
-    .alu_op(),      // input
-    .alu_in_1(),    // input  
-    .alu_in_2(),    // input
-    .alu_result(),  // output
-    .alu_bcond()    // output
+    .alu_op(alu_op),      // input
+    .alu_in_1(alu_in_1),    // input  
+    .alu_in_2(alu_in_2),    // input
+    .alu_result(alu_result),  // output
+    .alu_bcond(alu_bcond)    // output
   );
 
   // ---------- Data Memory ----------
