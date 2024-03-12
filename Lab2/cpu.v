@@ -14,12 +14,11 @@ module cpu(input reset,                     // positive reset signal
            output [31:0] print_reg [0:31]); // TO PRINT REGISTER VALUES IN TESTBENCH (YOU SHOULD NOT USE THIS)
     /***** declarations *****/
     // 1. pc
-    
     wire [31:0] pcValue;
 
     // 2. instruction_memory
-
     wire [31:0] instValue;
+
     // 3. register_file
 
     // 4. control_unit
@@ -33,8 +32,8 @@ module cpu(input reset,                     // positive reset signal
     wire [31:0] alu_in_1, alu_in_2, alu_result;
     wire alu_bcond;
 
-  /***** Wire declarations *****/
-  /***** Register declarations *****/
+    // 8. data memory
+
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -55,16 +54,16 @@ module cpu(input reset,                     // positive reset signal
 
   // ---------- Register File ----------
   register_file reg_file (
-    .reset (),        // input
-    .clk (),          // input
-    .rs1 (),          // input
-    .rs2 (),          // input
-    .rd (),           // input
-    .rd_din (),       // input
-    .write_enable (), // input
-    .rs1_dout (),     // output
-    .rs2_dout (),     // output
-    .print_reg (print_reg)  //DO NOT TOUCH THIS
+    .reset(),        // input
+    .clk(),          // input
+    .rs1(),          // input
+    .rs2(),          // input
+    .rd(),           // input
+    .rd_din(),       // input
+    .write_enable(), // input
+    .rs1_dout(),     // output
+    .rs2_dout(),     // output
+    .print_reg(print_reg)  //DO NOT TOUCH THIS
   );
 
 
@@ -106,12 +105,12 @@ module cpu(input reset,                     // positive reset signal
 
   // ---------- Data Memory ----------
   data_memory dmem(
-    .reset (),      // input
-    .clk (),        // input
-    .addr (),       // input
-    .din (),        // input
-    .mem_read (),   // input
-    .mem_write (),  // input
-    .dout ()        // output
+    .reset(),      // input
+    .clk(),        // input
+    .addr(),       // input
+    .din(),        // input
+    .mem_read(),   // input
+    .mem_write(),  // input
+    .dout()        // output
   );
 endmodule
