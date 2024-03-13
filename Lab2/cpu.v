@@ -14,7 +14,7 @@ module cpu(input reset,                     // positive reset signal
            output [31:0] print_reg [0:31]); // TO PRINT REGISTER VALUES IN TESTBENCH (YOU SHOULD NOT USE THIS)
     /***** declarations *****/
     // 1. pc
-    wire [31:0] pcOutput; //use this
+    wire [31:0] pcOutput; 
 
     // 2. instruction_memory
     wire [31:0] imemOutput;
@@ -36,11 +36,12 @@ module cpu(input reset,                     // positive reset signal
 
     // 5. imm gen
     wire [31:0] immgenOutput;
-    // 6. alu_control_unit
 
-    // 7. alu
+    // 6. alu_control_unit
     wire [2:0] alu_op;
     wire [2:0] btype;
+
+    // 7. alu
     wire [31:0] aluOutput;
     wire alu_bcond;
 
@@ -57,9 +58,6 @@ module cpu(input reset,                     // positive reset signal
     wire [31:0] twomux5Output;
     wire andGateOutput, orGateOutput;
 
-
-  /***** Wire declarations *****/
-  /***** Register declarations *****/
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -146,18 +144,18 @@ module cpu(input reset,                     // positive reset signal
     .mem_write(mem_write),  // input
     .dout(dmemOutput)        // output
   );
-
+  // ---------- Other Modules ----------
   adder adder1(
     .x1(pcOutput),
     .x2(32'b100),
     .y(adder1Output)
   );
-
   adder adder2(
     .x1(pcOutput),
     .x2(immgenOutput),
     .y(adder2Output)
   );
+
   twomux twomux1(
     .x0(adder1Output),
     .x1(adder2Output),
@@ -188,6 +186,7 @@ module cpu(input reset,                     // positive reset signal
     .sel(mem_to_reg),
     .y(twomux5Output)
   );
+  
   andGate andGate(
     .x1(branch),
     .x2(alu_bcond),

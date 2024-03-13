@@ -1,3 +1,4 @@
+// simple orGate
 module orGate(
     input x1,
     input x2,
