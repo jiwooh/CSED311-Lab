@@ -40,6 +40,7 @@ module cpu(input reset,                     // positive reset signal
 
     // 7. alu
     wire [2:0] alu_op;
+    wire [2:0] btype;
     wire [31:0] aluOutput;
     wire alu_bcond;
 
@@ -87,8 +88,8 @@ module cpu(input reset,                     // positive reset signal
     .rd(imemOutput[11:7]),           // input
     .rd_din(twomux4Output),       // input
     .write_enable(write_enable), // input
-    .regfileOutputData1(regfileOutputData1),     // output
-    .regfileOutputData2(regfileOutputData2),     // output
+    .rs1_dout(regfileOutputData1),     // output
+    .rs2_dout(regfileOutputData2),     // output
     .print_reg(print_reg)  //DO NOT TOUCH THIS
   );
 
@@ -110,22 +111,26 @@ module cpu(input reset,                     // positive reset signal
 
   // ---------- Immediate Generator ----------
   immediate_generator imm_gen(
-    .part_of_inst(imemOutput),  // input
+    .inst(imemOutput),  // input
     .imm_gen_out(immgenOutput)    // output
   );
 
   // ---------- ALU Control Unit ----------
   alu_control_unit alu_ctrl_unit (
-    .part_of_inst(imemOutput),  // input
-    .alu_op(alu_op)         // output
+    .opcode(imemOutput[6:0]),  // input
+    .funct3(imemOutput[14:12]),  // input
+    .funct7_5(imemOutput[30]),  // input
+    .alu_op(alu_op),         // output
+    .btype(btype)         // output
   );
 
   // ---------- ALU ----------
   alu alu (
     .alu_op(alu_op),      // input
+    .btype(btype),      // input
     .alu_in_1(regfileOutputData1),    // input  
     .alu_in_2(twomux3Output),    // input
-    .alu_result(aluOutput),  // output
+    .alu_res(aluOutput),  // output
     .alu_bcond(alu_bcond)    // output
   );
 
@@ -133,11 +138,13 @@ module cpu(input reset,                     // positive reset signal
   data_memory dmem(
     .reset(reset),      // input
     .clk(clk),        // input
+    .is_ecall(is_ecall), //input
     .addr(aluOutput),       // input
     .din(regfileOutputData2),        // input
     .mem_read(mem_read),   // input
     .mem_write(mem_write),  // input
-    .dout(dmemOutput)        // output
+    .dout(dmemOutput),        // output
+    .is_halted(is_halted)        // output
   );
 
   adder adder1(
@@ -147,7 +154,7 @@ module cpu(input reset,                     // positive reset signal
   );
 
   adder adder2(
-    .x1(pcValue),
+    .x1(pcOutput),
     .x2(immgenOutput),
     .y(adder2Output)
   );
@@ -155,7 +162,7 @@ module cpu(input reset,                     // positive reset signal
     .x0(adder1Output),
     .x1(adder2Output),
     .sel(orGateOutput),
-    .y(mux1Output)
+    .y(twomux1Output)
   );
   twomux twomux2(
     .x0(twomux1Output),
