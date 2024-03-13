@@ -2,13 +2,11 @@ module data_memory #(parameter MEM_DEPTH = 16384)
   (
     input reset,
     input clk,
-    input is_ecall,
     input [31:0] addr,    // address of the data memory
     input [31:0] din,     // data to be written
     input mem_read,       // is read signal driven?
     input mem_write,      // is write signal driven?
-    output reg [31:0] dout, // output of the data memory at addr
-    output reg is_halted
+    output reg [31:0] dout // output of the data memory at addr
     ); 
   
   integer i;
@@ -32,12 +30,6 @@ module data_memory #(parameter MEM_DEPTH = 16384)
       end
       else begin
         dout = 0;
-      end
-      if(is_ecall) begin
-        is_halted = (mem[17]==10);
-      end
-      else begin
-        is_halted = 0;
       end
   end
 

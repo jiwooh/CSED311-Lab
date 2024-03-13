@@ -88,9 +88,11 @@ module cpu(input reset,                     // positive reset signal
     .rd(imemOutput[11:7]),           // input
     .rd_din(twomux4Output),       // input
     .write_enable(write_enable), // input
+    .is_ecall(is_ecall), //input
     .rs1_dout(regfileOutputData1),     // output
     .rs2_dout(regfileOutputData2),     // output
-    .print_reg(print_reg)  //DO NOT TOUCH THIS
+    .print_reg(print_reg),  //DO NOT TOUCH THIS
+    .is_halted(is_halted)        // output
   );
 
 
@@ -138,13 +140,11 @@ module cpu(input reset,                     // positive reset signal
   data_memory dmem(
     .reset(reset),      // input
     .clk(clk),        // input
-    .is_ecall(is_ecall), //input
     .addr(aluOutput),       // input
     .din(regfileOutputData2),        // input
     .mem_read(mem_read),   // input
     .mem_write(mem_write),  // input
-    .dout(dmemOutput),        // output
-    .is_halted(is_halted)        // output
+    .dout(dmemOutput)        // output
   );
 
   adder adder1(
