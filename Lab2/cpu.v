@@ -38,9 +38,10 @@ module cpu(input reset,                     // positive reset signal
     wire [31:0] immGenOutput;
 
     // 6. alu_control_unit
+    wire [2:0] alu_op;
+    wire [2:0] btype;
 
     // 7. alu
-    wire [2:0] alu_op;
     wire [31:0] aluOutput;
     wire alu_bcond;
 

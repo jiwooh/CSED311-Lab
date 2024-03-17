@@ -1,4 +1,5 @@
-`include "opcode.v"
+`include "opcodes.v"
+
 module immediate_generator(
     input [31:0] part_of_inst,
     output reg signed [31:0] imm_gen_out
