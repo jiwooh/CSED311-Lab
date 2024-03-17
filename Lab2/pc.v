@@ -8,7 +8,8 @@ module pc(
 always @(posedge clk) begin
   if (reset) begin
     current_pc <= 0;
-  end else begin
+  end
+  else begin
     current_pc <= next_pc;
   end
 end

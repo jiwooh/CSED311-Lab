@@ -26,8 +26,8 @@ always @(*) begin
             case (btype)
                 `BTYPE_EQ: alu_bcond = (alu_res == 0);
                 `BTYPE_NE: alu_bcond = (alu_res != 0);
-                `BTYPE_LT: alu_bcond = (alu_res < 0);
                 `BTYPE_GE: alu_bcond = (alu_res >= 0);
+                `BTYPE_LT: alu_bcond = (alu_res < 0);
                 default: alu_bcond = 0;
             endcase
 		end

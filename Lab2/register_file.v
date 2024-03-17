@@ -25,7 +25,8 @@ module register_file(input	reset,
         // halt check
         if (is_ecall) begin
             is_halted = (rf[17] == 10); // condition given on pdf
-        end else begin
+        end
+        else begin
             is_halted = 0;
         end
     end

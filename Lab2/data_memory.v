@@ -22,7 +22,8 @@ module data_memory #(parameter MEM_DEPTH = 16384) (input reset,
   always @(*) begin // read
     if (mem_read && !mem_write) begin
       dout = mem[dmem_addr];
-    end else begin
+    end
+    else begin
         dout = 0;
     end
   end
