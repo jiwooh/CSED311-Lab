@@ -126,6 +126,7 @@ module cpu(input reset,                     // positive reset signal
   // ---------- ALU ----------
   alu alu (
     .alu_op(alu_op),      // input
+    .btype(btype),      // input
     .alu_in_1(regfileOutputData1),    // input  
     .alu_in_2(twomux3Output),    // input
     .alu_res(aluOutput),  // output
@@ -173,14 +174,14 @@ module cpu(input reset,                     // positive reset signal
         .y(twomux3Output)  // output
     );
     twomux twomux4(
-        .a(adder1Output),  // input
-        .b(twomux5Output),  // input
+        .a(twomux5Output),  // input
+        .b(adder1Output),  // input
         .sel(pc_to_reg),  // input
         .y(twomux4Output)  // output
     );
     twomux twomux5(
-        .a(dmemOutput),  // input
-        .b(aluOutput),  // input
+        .a(aluOutput),  // input
+        .b(dmemOutput),  // input
         .sel(mem_to_reg),  // input
         .y(twomux5Output)  // output
     );

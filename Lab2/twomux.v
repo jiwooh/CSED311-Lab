@@ -5,6 +5,6 @@ module twomux (
     output [31:0] y
 );
 
-assign y = sel ? a : b;
+assign y = sel ? b : a;
 
 endmodule

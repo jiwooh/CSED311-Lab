@@ -21,6 +21,7 @@ always @(*) begin
         `BRANCH: begin
             imm_gen_out = {{20{part_of_inst[31]}}, part_of_inst[7], part_of_inst[30:25], part_of_inst[11:8], 1'b0};
         end
+        default: imm_gen_out = 0;
     endcase
 end
 
