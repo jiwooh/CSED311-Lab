@@ -1,10 +1,3 @@
-//   alu_control_unit alu_ctrl_unit (
-//     .opcode(imemOutput[6:0]),  // input
-//     .funct3(imemOutput[14:12]),  // input
-//     .funct7_5(imemOutput[30]),  // input
-//     .alu_op(alu_op),         // output
-//     .btype(btype)          // output
-//   );
 `include "opcodes.v"
 `include "alucodes.v"
 
@@ -15,6 +8,11 @@ module alu_control_unit (
     output reg [2:0] alu_op,
     output reg [2:0] btype
 );
+
+initial begin
+    alu_op = `OP_NONE;
+    btype = `BTYPE_NONE;
+end
 
 always @(*) begin
     alu_op = `OP_NONE;
