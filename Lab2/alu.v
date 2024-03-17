@@ -2,10 +2,10 @@
 
 module alu (
 	input [2:0] alu_op,
-	input [31:0] alu_in_1, 
-	input [31:0] alu_in_2, 
-    output wire [31:0] alu_res,
-    output wire alu_bcond);
+	input signed [31:0] alu_in_1, 
+	input signed [31:0] alu_in_2, 
+    output reg signed [31:0] alu_res,
+    output reg alu_bcond);
 
 
 initial begin

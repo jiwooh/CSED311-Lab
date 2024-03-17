@@ -48,7 +48,7 @@ module cpu(input reset,                     // positive reset signal
     // 8. data memory
     wire [31:0] dmemOutput;
     
-    // etc.
+    // etc
     wire [31:0] adder1Output;
     wire [31:0] adder2Output;
     wire [31:0] twomux1Output;
@@ -157,7 +157,7 @@ module cpu(input reset,                     // positive reset signal
     twomux twomux1(
         .a(adder1Output),  // input
         .b(adder2Output),  // input
-        .sel(orGateOuput),  // input
+        .sel(orGateOutput),  // input
         .y(twomux1Output)  // output
     );
     twomux twomux2(
