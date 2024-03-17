@@ -115,8 +115,11 @@ module cpu(input reset,                     // positive reset signal
 
   // ---------- ALU Control Unit ----------
   alu_control_unit alu_ctrl_unit (
-    .part_of_inst(),  // input
-    .alu_op(alu_op)         // output
+    .opcode(imemOutput[6:0]),  // input
+    .funct3(imemOutput[14:12]),  // input
+    .funct7_5(imemOutput[30]),  // input
+    .alu_op(alu_op),         // output
+    .btype(btype)          // output
   );
 
   // ---------- ALU ----------
@@ -142,7 +145,7 @@ module cpu(input reset,                     // positive reset signal
   // ---------- Other ----------
     adder adder1(
         .a(pcOutput),  // input
-        .b(32b'100),  // input
+        .b(32'b100),  // input
         .result(adder1Output)  // output
     );
     adder adder2(
