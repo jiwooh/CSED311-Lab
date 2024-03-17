@@ -28,7 +28,7 @@ always @(*) begin
 		`FUNC_SLL: alu_res = alu_in_1 << 1; // SLL
 		`FUNC_SRL: begin // SRL
         	alu_res = alu_in_1 >> 1;
-        	alu_res[data_width - 1] = 0; // MSB 0
+        	alu_res[31] = 0; // MSB 0
 		end
 	endcase
 end

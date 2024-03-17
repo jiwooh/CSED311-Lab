@@ -127,7 +127,7 @@ module cpu(input reset,                     // positive reset signal
     .alu_op(alu_op),      // input
     .alu_in_1(regfileOutputData1),    // input  
     .alu_in_2(twomux3Output),    // input
-    .alu_result(aluOutput),  // output
+    .alu_res(aluOutput),  // output
     .alu_bcond(alu_bcond)    // output
   );
 
