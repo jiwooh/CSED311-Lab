@@ -5,9 +5,11 @@ module register_file(input	reset,
                      input [4:0] rd,           // destination register
                      input [31:0] rd_din,      // input data for rd
                      input write_enable,          // RegWrite signal
+                     input is_ecall,
                      output [31:0] rs1_dout,   // output of rs 1
                      output [31:0] rs2_dout,   // output of rs 2
-                     output [31:0] print_reg [0:31]);
+                     output [31:0] print_reg [0:31],
+                     output is_halted);
   integer i;
   // Register file
   reg [31:0] rf[0:31];
@@ -16,12 +18,21 @@ module register_file(input	reset,
 
   // TODO
   // Asynchronously read register file
-    assign rs1_dout = rf[rs1];
-    assign rs2_dout = rf[rs2];
+    always @(*) begin
+        rs1_dout = rf[rs1];
+        rs2_dout = rf[rs2];
+
+        // halt check
+        if (is_ecall) begin
+            is_halted = (rf[17] == 10); // condition given on pdf
+        end else begin
+            is_halted = 0;
+        end
+    end
 
   // Synchronously write data to the register file
     always @(posedge clk) begin
-        if (write_enable) begin
+        if (write_enable && rd != 0) begin // do not write to x0
             rf[rd] <= rd_din;
         end
     end
