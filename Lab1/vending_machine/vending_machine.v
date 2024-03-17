@@ -56,6 +56,7 @@ module vending_machine (
 	// Variables. You may add more your own net variables.s
 	wire [`kTotalBits-1:0] input_total, output_total, return_total;
 
+
 	// This module interface, structure, and given a number of modules are not mandatory but recommended.
 	// However, Implementations that use modules are mandatory.
 		
@@ -64,21 +65,21 @@ module vending_machine (
 									.clk(clk),
 									.reset_n(reset_n),
 									.o_return_coin(o_return_coin),
-                                    .current_total(current_total), 
-                                    .i_trigger_return(i_trigger_return), 
-                                    .item_price(item_price),
-                                    .coin_value(coin_value));
+									.current_total(current_total),
+									.item_price(item_price),
+									.i_trigger_return(i_trigger_return),
+									.coin_value(coin_value));
 
 	calculate_current_state calculate_current_state_module(.i_input_coin(i_input_coin),
 										.i_select_item(i_select_item),
 										.item_price(item_price),
 										.coin_value(coin_value),
 										.current_total(current_total),
+										.input_total(input_total),
+										.output_total(output_total),
+										.return_total(return_total),
 										.current_total_nxt(current_total_nxt),
-                                        .input_total(input_total),
-                                        .output_total(output_total),
-                                        .return_total(return_total),
-                                        .o_return_coin(o_return_coin),
+										.o_return_coin(o_return_coin),
 										.o_available_item(o_available_item),
 										.o_output_item(o_output_item));
 	
@@ -86,10 +87,10 @@ module vending_machine (
 						.clk(clk),
 						.reset_n(reset_n),
 						.current_total_nxt(current_total_nxt),
-                        .input_total(input_total),
-                        .output_total(output_total),
-                        .return_total(return_total),
-						.current_total(current_total));
+						.current_total(current_total),
+						.input_total(input_total),
+						.output_total(output_total),
+						.return_total(return_total));
 
 
 endmodule
