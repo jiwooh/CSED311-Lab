@@ -10,7 +10,7 @@
 using namespace std;
 #include "Vtop.h"
 
-#define MAX_SIM_TIME 300
+#define MAX_SIM_TIME 10000
 int sim_time = 0;
 int total_cycle = 0;
 
