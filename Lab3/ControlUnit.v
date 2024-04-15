@@ -34,7 +34,6 @@ module ControlUnit (
       `IF_1: begin
         NextState=`IF_2;
       end
-
       `IF_2: begin
         if(op==`JAL)
           NextState=`EX_1;
@@ -43,15 +42,12 @@ module ControlUnit (
         else
           NextState=`ID;
       end
-
       `ID: begin
         NextState=`EX_1;
       end
-
       `EX_1: begin
         case (op)
-          `ARITHMETIC,
-          `ARITHMETIC_IMM:
+          `ARITHMETIC,`ARITHMETIC_IMM:
             NextState=`WB;
           `LOAD, `STORE:
             NextState=`MEM;
@@ -67,22 +63,18 @@ module ControlUnit (
             NextState=`IF_1;
         endcase
       end
-
       `EX_2: begin
         NextState=`IF_1;
       end
-
       `MEM: begin
         if(op==`LOAD)
           NextState=`WB;
         else
           NextState=`IF_1;
       end
-
       `WB: begin
           NextState=`IF_1;
       end
-
       default: begin
           NextState=`IF_1;
       end
