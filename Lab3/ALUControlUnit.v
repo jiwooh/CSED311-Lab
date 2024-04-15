@@ -88,6 +88,7 @@ module ALUControlUnit (
                     end
                 endcase
             end
+            // to prevent unintended calculation
             `ALU_NOP: begin
                 alu_op = `NOT_FUNC;
                 btype=`NOT_BRANCH;

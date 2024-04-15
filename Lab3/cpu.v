@@ -103,6 +103,7 @@ module cpu(input reset,       // positive reset signal
     .dout(MemDataOut)          // output
   );
 
+  // ---------- Registers Update ----------
   always @(posedge clk) begin
     if(IRWrite)
       IR<=MemDataOut;
