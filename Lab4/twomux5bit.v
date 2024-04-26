@@ -1,5 +1,5 @@
-// simple 2:1 mux for 4 bit inputs
-module twomux4bit (
+// simple 2:1 mux for 5 bit inputs
+module twomux5bit (
     input [4:0] x0, 
     input [4:0] x1, 
     input sel, 

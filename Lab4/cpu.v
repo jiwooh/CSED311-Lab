@@ -56,7 +56,7 @@ module cpu(input reset,       // positive reset signal
     wire [31:0] twomux3Output;
     // wire [31:0] twomux4Output;
     wire [31:0] twomux5Output;
-    wire [4:0] twomux6Output; // 4bit mux
+    wire [4:0] twomux6Output; // 5bit mux
     // wire andGateOutput, orGateOutput;
     wire _is_halted;
     wire is_x17_10;
@@ -122,6 +122,7 @@ module cpu(input reset,       // positive reset signal
     PC pc(
         .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
         .clk(clk),         // input
+        .pc_write(!is_hazard), // do not write pc if hazard
         .next_pc(adder1Output),     // input // twomux2Output
         .current_pc(pcOutput)   // output
     );
@@ -151,10 +152,22 @@ module cpu(input reset,       // positive reset signal
         end
     end
 
+    // ---------- Hazard Detection ----------
+    HazardDetection hazarddetection(
+        .IF_ID_inst(IF_ID_inst),
+        .ID_EX_rd(ID_EX_rd),
+        .ID_EX_reg_write(ID_EX_reg_write),
+        .ID_EX_mem_read(ID_EX_mem_read),
+        .EX_MEM_rd(EX_MEM_rd),
+        .EX_MEM_reg_write(EX_MEM_reg_write),
+        .is_ecall(is_ecall),
+        .is_hazard(is_hazard)
+    );
+
     // ecall mux
-    twomux4bit twomux6(
+    twomux5bit twomux6(
         .x0(IF_ID_inst[19:15]),
-        .x1(17),
+        .x1(5'd17),
         .sel(is_ecall),
         .y(twomux6Output)
     );
@@ -195,6 +208,7 @@ module cpu(input reset,       // positive reset signal
     // Update ID/EX pipeline registers here
     always @(posedge clk) begin
         if (reset | is_hazard) begin
+            // set all 0 if hazard
             ID_EX_alu_op <= 0;
             ID_EX_alu_src <= 0;
             ID_EX_mem_write <= 0;
