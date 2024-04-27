@@ -63,6 +63,8 @@ module cpu(input reset,       // positive reset signal
     wire is_hazard;
 
     // forwarding unit
+    reg [31:0] alu_in_1_forwarded;
+    reg [31:0] alu_in_2_forwarded;
     wire [1:0] forwardA;
     wire [1:0] forwardB;
 
@@ -255,11 +257,28 @@ module cpu(input reset,       // positive reset signal
         .forwardB(forwardB)
     );
     
+    // rs1 forwarding mux
+    threemux threemux1(
+        .x0(ID_EX_rs1_data),
+        .x1(EX_MEM_alu_out),
+        .x2(twomux5Output),
+        .sel(forwardA),
+        .y(alu_in_1_forwarded)
+    );
+    // rs2 forwarding mux
+    threemux threemux2(
+        .x0(ID_EX_rs2_data),
+        .x1(EX_MEM_alu_out),
+        .x2(twomux5Output),
+        .sel(forwardB),
+        .y(alu_in_2_forwarded)
+    );
+
     // alu_in_2 mux
     twomux twomux3(
-        .x0(regfileOutputData2),
-        .x1(immgenOutput),
-        .sel(ALU_src),
+        .x0(alu_in_2_forwarded),
+        .x1(ID_EX_imm),
+        .sel(ID_EX_alu_src),
         .y(twomux3Output)
     );
 
@@ -275,8 +294,8 @@ module cpu(input reset,       // positive reset signal
     // ---------- ALU ----------
     ALU alu (
         .alu_op(ALU_op),      // input
-        .alu_in_1(ID_EX_rs1_data),    // input  // regfileOutputData1
-        .alu_in_2(twomux3Output),    // input
+        .alu_in_1(alu_in_1_forwarded),    // input  // regfileOutputData1
+        .alu_in_2(twomux3Output),    // input // regfileOutputData2
         .alu_res(ALUOutput)//,  // output
         //.alu_zero()     // output
     );
