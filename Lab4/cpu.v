@@ -10,7 +10,7 @@
 
 module cpu(input reset,       // positive reset signal
            input clk,         // clock signal
-           output is_halted, // Whehther to finish simulation
+           output reg is_halted, // Whehther to finish simulation
            output [31:0] print_reg [0:31]); // Whehther to finish simulation
     /***** Wire declarations *****/
     // 1. pc
@@ -170,9 +170,9 @@ module cpu(input reset,       // positive reset signal
         .clk (clk),          // input
         .rs1 (twomux6Output),          // input
         .rs2 (IF_ID_inst[24:20]),          // input
-        .rd (IF_ID_inst[11:7]),           // input
+        .rd (MEM_WB_rd),           // input
         .rd_din (twomux5Output),       // input // twomux4Output
-        .write_enable (reg_write),    // input
+        .write_enable (MEM_WB_reg_write),    // input
         .rs1_dout (regfileOutputData1),     // output
         .rs2_dout (regfileOutputData2),      // output
         .print_reg(print_reg)
@@ -189,6 +189,19 @@ module cpu(input reset,       // positive reset signal
         .write_enable(reg_write),  // output
         .pc_to_reg(pc_to_reg),     // output
         .is_ecall(is_ecall)       // output (ecall inst)
+    );
+
+    // ---------- ALU Control Unit ----------
+    ALUControlUnit alu_ctrl_unit (
+        .opcode(IF_ID_inst[6:0]),
+        .funct3(IF_ID_inst[14:12]),
+        .funct7_5(IF_ID_inst[30]),
+        .alu_op(ALU_op)
+        // .opcode(ID_EX_inst[6:0]),  // input
+        // .funct3(ID_EX_inst[14:12]),  // input
+        // .funct7_5(ID_EX_inst[30]),  // input
+        // .alu_op(ID_EX_alu_op)// ,         // output
+        // .btype(btype)         // output
     );
 
     // ---------- Hazard Detection ----------
@@ -211,8 +224,7 @@ module cpu(input reset,       // positive reset signal
 
     // Update ID/EX pipeline registers here
     always @(posedge clk) begin
-        if (reset | is_hazard) begin
-            // set all 0 if hazard
+        if (reset) begin
             ID_EX_alu_op <= 0;
             ID_EX_alu_src <= 0;
             ID_EX_mem_write <= 0;
@@ -241,6 +253,9 @@ module cpu(input reset,       // positive reset signal
             ID_EX_inst <= IF_ID_inst;
             ID_EX_rd <= IF_ID_inst[11:7];
             ID_EX_is_halted <= _is_halted;
+        end
+        if (is_hazard) begin
+            ID_EX_rd <= 5'b0;
         end
     end
 
@@ -282,18 +297,11 @@ module cpu(input reset,       // positive reset signal
         .y(twomux3Output)
     );
 
-    // ---------- ALU Control Unit ----------
-    ALUControlUnit alu_ctrl_unit (
-        .opcode(ID_EX_inst[6:0]),  // input
-        .funct3(ID_EX_inst[14:12]),  // input
-        .funct7_5(ID_EX_inst[30]),  // input
-        .alu_op(ALU_op)// ,         // output
-        // .btype(btype)         // output
-    );
+    // ALU CONTROL UNIT HERE ???
 
     // ---------- ALU ----------
     ALU alu (
-        .alu_op(ALU_op),      // input
+        .alu_op(ID_EX_alu_op),      // input
         .alu_in_1(alu_in_1_forwarded),    // input  // regfileOutputData1
         .alu_in_2(twomux3Output),    // input // regfileOutputData2
         .alu_res(ALUOutput)//,  // output
@@ -320,7 +328,7 @@ module cpu(input reset,       // positive reset signal
             EX_MEM_reg_write <= ID_EX_reg_write;
 
             EX_MEM_alu_out <= ALUOutput;
-            EX_MEM_dmem_data <= regfileOutputData2;
+            EX_MEM_dmem_data <= alu_in_2_forwarded;
             EX_MEM_rd <= ID_EX_rd;
             EX_MEM_is_halted <= ID_EX_is_halted;
         end
@@ -350,8 +358,8 @@ module cpu(input reset,       // positive reset signal
         else begin
             MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;
             MEM_WB_reg_write <= EX_MEM_reg_write;
-            MEM_WB_mem_to_reg_src_1 <= EX_MEM_alu_out;
-            MEM_WB_mem_to_reg_src_2 <= dmemOutput;
+            MEM_WB_mem_to_reg_src_1 <= dmemOutput;
+            MEM_WB_mem_to_reg_src_2 <= EX_MEM_alu_out;
             MEM_WB_is_halted <= EX_MEM_is_halted;
             MEM_WB_rd <= EX_MEM_rd;
         end
@@ -359,12 +367,11 @@ module cpu(input reset,       // positive reset signal
     
     // register write mux
     twomux twomux5(
-        .x0(ALUOutput),
-        .x1(dmemOutput),
-        .sel(mem_to_reg),
+        .x0(MEM_WB_mem_to_reg_src_1),
+        .x1(MEM_WB_mem_to_reg_src_2),
+        .sel(MEM_WB_mem_to_reg),
         .y(twomux5Output)
     );
-    // does this belong here?
 
     // ---------- Other UNUSED Modules ----------
     
