@@ -62,7 +62,9 @@ module cpu(input reset,       // positive reset signal
     wire is_x17_10;
     wire is_hazard;
 
-    // forwarding?
+    // forwarding unit
+    wire [1:0] forwardA;
+    wire [1:0] forwardB;
 
     /***** Register declarations *****/
     // TODO You need to modify the width of registers
@@ -152,18 +154,6 @@ module cpu(input reset,       // positive reset signal
         end
     end
 
-    // ---------- Hazard Detection ----------
-    HazardDetection hazarddetection(
-        .IF_ID_inst(IF_ID_inst),
-        .ID_EX_rd(ID_EX_rd),
-        .ID_EX_reg_write(ID_EX_reg_write),
-        .ID_EX_mem_read(ID_EX_mem_read),
-        .EX_MEM_rd(EX_MEM_rd),
-        .EX_MEM_reg_write(EX_MEM_reg_write),
-        .is_ecall(is_ecall),
-        .is_hazard(is_hazard)
-    );
-
     // ecall mux
     twomux5bit twomux6(
         .x0(IF_ID_inst[19:15]),
@@ -197,6 +187,18 @@ module cpu(input reset,       // positive reset signal
         .write_enable(reg_write),  // output
         .pc_to_reg(pc_to_reg),     // output
         .is_ecall(is_ecall)       // output (ecall inst)
+    );
+
+    // ---------- Hazard Detection ----------
+    HazardDetection hazarddetection(
+        .IF_ID_inst(IF_ID_inst),
+        .ID_EX_rd(ID_EX_rd),
+        .ID_EX_reg_write(ID_EX_reg_write),
+        .ID_EX_mem_read(ID_EX_mem_read),
+        .EX_MEM_rd(EX_MEM_rd),
+        .EX_MEM_reg_write(EX_MEM_reg_write),
+        .is_ecall(is_ecall),
+        .is_hazard(is_hazard)
     );
 
     // ---------- Immediate Generator ----------
@@ -239,6 +241,19 @@ module cpu(input reset,       // positive reset signal
             ID_EX_is_halted <= _is_halted;
         end
     end
+
+    // ---------- Forawrding Unit ----------
+    ForwardingUnit forwarding_unit(
+        .opcode(ID_EX_inst[6:0]),
+        .rs1(twomux6Output),
+        .rs2(ID_EX_inst[24:20]),
+        .dist1_rd(EX_MEM_rd),
+        .dist1_reg_write(EX_MEM_reg_write),
+        .dist2_rd(MEM_WB_rd),
+        .dist2_reg_write(MEM_WB_reg_write),
+        .forwardA(forwardA),
+        .forwardB(forwardB)
+    );
     
     // alu_in_2 mux
     twomux twomux3(
