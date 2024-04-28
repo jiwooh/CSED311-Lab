@@ -20,7 +20,10 @@ module cpu(input reset,       // positive reset signal
     wire [31:0] imemOutput;
 
     // 3. RegisterFile
-    wire [31:0] regfileOutputData1, regfileOutputData2;
+    wire [4:0] rs1;
+    wire [4:0] rs2;
+    wire [31:0] regfileOutputData1;
+    wire [31:0] regfileOutputData2;
 
     // 4. ControlUnit
     // wire is_jalr;
@@ -92,9 +95,9 @@ module cpu(input reset,       // positive reset signal
     reg [31:0] ID_EX_imm;
     reg [31:0] ID_EX_inst;
     reg [4:0] ID_EX_rd;
+    reg ID_EX_is_halted;
     reg [4:0] ID_EX_rs1;
     reg [4:0] ID_EX_rs2;
-    reg ID_EX_is_halted;
 
     /***** EX/MEM pipeline registers *****/
     // From the control unit
@@ -120,6 +123,7 @@ module cpu(input reset,       // positive reset signal
     reg MEM_WB_is_halted;
 
     // assign
+    assign rs2 = IF_ID_inst[24:20];
     assign is_x17_10 = (rs1_dout_forwarded == 10) & (twomux6Output == 17);
     assign _is_halted = is_ecall & is_x17_10;
     assign is_halted = MEM_WB_is_halted;
@@ -177,15 +181,15 @@ module cpu(input reset,       // positive reset signal
         .x0(IF_ID_inst[19:15]),
         .x1(5'd17),
         .sel(is_ecall),
-        .y(twomux6Output)
+        .y(rs1)
     );
 
     // ---------- Register File ----------
     RegisterFile reg_file (
         .reset (reset),        // input
         .clk (clk),          // input
-        .rs1 (twomux6Output),          // input
-        .rs2 (IF_ID_inst[24:20]),          // input
+        .rs1 (rs1),          // input
+        .rs2 (rs2),          // input
         .rd (MEM_WB_rd),           // input
         .rd_din (twomux5Output),       // input // twomux4Output
         .write_enable (MEM_WB_reg_write),    // input
@@ -197,7 +201,7 @@ module cpu(input reset,       // positive reset signal
     // ---------- ecall Forwarding ----------
     ForwardingEcall ecall_forwarding(
         .rs1(twomux6Output),
-        .rs2(IF_ID_inst[24:20]),
+        .rs2(rs2),
         .rd(MEM_WB_rd),
         .EX_MEM_rd(EX_MEM_rd),
         .is_ecall(is_ecall),
@@ -260,8 +264,8 @@ module cpu(input reset,       // positive reset signal
             ID_EX_inst <= IF_ID_inst;
             ID_EX_rd <= IF_ID_inst[11:7];
             ID_EX_is_halted <= _is_halted;
-            ID_EX_rs1 <= twomux6Output;
-            ID_EX_rs2 <= IF_ID_inst[24:20];
+            ID_EX_rs1 <= rs1;
+            ID_EX_rs2 <= rs2;
         end
         if (is_hazard) begin
             ID_EX_rd <= 5'b0;
