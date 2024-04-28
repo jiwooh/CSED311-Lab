@@ -67,6 +67,8 @@ module cpu(input reset,       // positive reset signal
     reg [31:0] alu_in_2_forwarded;
     wire [1:0] forwardA;
     wire [1:0] forwardB;
+    reg [31:0] rs1_dout_forwarded;
+    reg [31:0] rs2_dout_forwarded;
 
     /***** Register declarations *****/
     // TODO You need to modify the width of registers
@@ -116,7 +118,7 @@ module cpu(input reset,       // positive reset signal
     reg MEM_WB_is_halted;
 
     // assign
-    assign is_x17_10 = (regfileOutputData1 == 10) & (twomux6Output == 17);
+    assign is_x17_10 = (rs1_dout_forwarded == 10) & (twomux6Output == 17);
     assign _is_halted = is_ecall & is_x17_10;
     assign is_halted = MEM_WB_is_halted;
 
@@ -178,6 +180,20 @@ module cpu(input reset,       // positive reset signal
         .print_reg(print_reg)
     );
 
+    // ---------- ecall Forwarding ----------
+    ForwardingEcall ecall_forwarding(
+        .rs1(twomux6Output),
+        .rs2(IF_ID_inst[24:20]),
+        .rd(MEM_WB_rd),
+        .EX_MEM_rd(EX_MEM_rd),
+        .is_ecall(is_ecall),
+        .rd_din(twomux5Output),
+        .rs1_dout(regfileOutputData1),
+        .rs2_dout(regfileOutputData2),
+        .EX_MEM_alu_out(EX_MEM_alu_out),
+        .rs1_dout_forwarded(rs1_dout_forwarded),
+        .rs2_dout_forwarded(rs2_dout_forwarded)
+    );
 
     // ---------- Control Unit ----------
     ControlUnit ctrl_unit (
@@ -247,8 +263,8 @@ module cpu(input reset,       // positive reset signal
             ID_EX_mem_to_reg <= mem_to_reg;
             ID_EX_reg_write <= reg_write;
 
-            ID_EX_rs1_data <= regfileOutputData1;
-            ID_EX_rs2_data <= regfileOutputData2;
+            ID_EX_rs1_data <= rs1_dout_forwarded;
+            ID_EX_rs2_data <= rs2_dout_forwarded;
             ID_EX_imm <= immgenOutput;
             ID_EX_inst <= IF_ID_inst;
             ID_EX_rd <= IF_ID_inst[11:7];
