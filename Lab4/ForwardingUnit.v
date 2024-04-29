@@ -34,9 +34,9 @@ always @(*) begin
 
     // rs2 Forwarding
     if (opcode == `ARITHMETIC || opcode == `LOAD || opcode == `STORE) begin
-        if (rs1 == dist1_rd && dist1_rd != 0 && dist1_reg_write) begin
+        if (rs2     == dist1_rd && dist1_rd != 0 && dist1_reg_write) begin
             forwardB = 2'b01; // Distance 1 Forwarding
-        end else if (rs1 == dist2_rd && dist2_rd != 0 && dist2_reg_write) begin
+        end else if (rs2 == dist2_rd && dist2_rd != 0 && dist2_reg_write) begin
             forwardB = 2'b10; // Distance 2 Forwarding
         end else begin
             forwardB = 2'b00; // No Forwarding
