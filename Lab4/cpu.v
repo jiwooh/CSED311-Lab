@@ -59,7 +59,7 @@ module cpu(input reset,       // positive reset signal
     wire [31:0] twomux3Output;
     // wire [31:0] twomux4Output;
     wire [31:0] twomux5Output;
-    wire [4:0] twomux6Output; // 5bit mux
+    //wire [4:0] twomux6Output; // 5bit mux
     // wire andGateOutput, orGateOutput;
     wire _is_halted;
     wire is_x17_10;
@@ -83,7 +83,7 @@ module cpu(input reset,       // positive reset signal
 
     /***** ID/EX pipeline registers *****/
     // From the control unit
-    reg [2:0] ID_EX_alu_op;         // will be used in EX stage
+    //reg [2:0] ID_EX_alu_op;         // will be used in EX stage
     reg ID_EX_alu_src;        // will be used in EX stage
     reg ID_EX_mem_write;      // will be used in MEM stage
     reg ID_EX_mem_read;       // will be used in MEM stage
@@ -124,7 +124,7 @@ module cpu(input reset,       // positive reset signal
 
     // assign
     assign rs2 = IF_ID_inst[24:20];
-    assign is_x17_10 = (rs1_dout_forwarded == 10) & (twomux6Output == 17);
+    assign is_x17_10 = (rs1_dout_forwarded == 10) & (rs1 == 17);
     assign _is_halted = is_ecall & is_x17_10;
     assign is_halted = MEM_WB_is_halted;
 
@@ -200,7 +200,7 @@ module cpu(input reset,       // positive reset signal
 
     // ---------- ecall Forwarding ----------
     ForwardingEcall ecall_forwarding(
-        .rs1(twomux6Output),
+        .rs1(rs1),
         .rs2(rs2),
         .rd(MEM_WB_rd),
         .EX_MEM_rd(EX_MEM_rd),
@@ -234,7 +234,7 @@ module cpu(input reset,       // positive reset signal
     // Update ID/EX pipeline registers here
     always @(posedge clk) begin
         if (reset) begin
-            ID_EX_alu_op <= 0;
+            //ID_EX_alu_op <= 0;
             ID_EX_alu_src <= 0;
             ID_EX_mem_write <= 0;
             ID_EX_mem_read <= 0;
@@ -251,7 +251,7 @@ module cpu(input reset,       // positive reset signal
             ID_EX_rs2 <= 0;
         end
         else begin
-            ID_EX_alu_op <= ALU_op;
+            //ID_EX_alu_op <= ALU_op;
             ID_EX_alu_src <= ALU_src;
             ID_EX_mem_write <= mem_write;
             ID_EX_mem_read <= mem_read;
@@ -268,6 +268,8 @@ module cpu(input reset,       // positive reset signal
             ID_EX_rs2 <= rs2;
         end
         if (is_hazard) begin
+            ID_EX_reg_write <= 0;
+            ID_EX_mem_write <= 0;
             ID_EX_rd <= 5'b0;
         end
     end
@@ -320,14 +322,14 @@ module cpu(input reset,       // positive reset signal
 
     // ---------- ALU Control Unit ----------
     ALUControlUnit alu_ctrl_unit (
-        .opcode(IF_ID_inst[6:0]),
-        .funct3(IF_ID_inst[14:12]),
-        .funct7_5(IF_ID_inst[30]),
-        .alu_op(ALU_op)
-        // .opcode(ID_EX_inst[6:0]),  // input
-        // .funct3(ID_EX_inst[14:12]),  // input
-        // .funct7_5(ID_EX_inst[30]),  // input
-        // .alu_op(ID_EX_alu_op)// ,         // output
+        // .opcode(IF_ID_inst[6:0]),
+        // .funct3(IF_ID_inst[14:12]),
+        // .funct7_5(IF_ID_inst[30]),
+        // .alu_op(ALU_op)
+        .opcode(ID_EX_inst[6:0]),  // input
+        .funct3(ID_EX_inst[14:12]),  // input
+        .funct7_5(ID_EX_inst[30]),  // input
+        .alu_op(ALU_op)// ,         // output
         // .btype(btype)         // output
     );
 
@@ -390,8 +392,8 @@ module cpu(input reset,       // positive reset signal
         else begin
             MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;
             MEM_WB_reg_write <= EX_MEM_reg_write;
-            MEM_WB_mem_to_reg_src_1 <= dmemOutput;
-            MEM_WB_mem_to_reg_src_2 <= EX_MEM_alu_out;
+            MEM_WB_mem_to_reg_src_1 <= EX_MEM_alu_out;
+            MEM_WB_mem_to_reg_src_2 <= dmemOutput;
             MEM_WB_is_halted <= EX_MEM_is_halted;
             MEM_WB_rd <= EX_MEM_rd;
         end
