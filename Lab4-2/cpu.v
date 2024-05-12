@@ -60,6 +60,8 @@ module cpu(input reset,       // positive reset signal
     // wire [31:0] twomux4Output;
     wire [31:0] twomux5Output;
     //wire [4:0] twomux6Output; // 5bit mux
+    wire [31:0] twomux7Output;
+    wire [31:0] twomux8Output;
     // wire andGateOutput, orGateOutput;
     wire _is_halted;
     wire is_x17_10;
@@ -73,15 +75,15 @@ module cpu(input reset,       // positive reset signal
     reg [31:0] rs1_dout_forwarded;
     reg [31:0] rs2_dout_forwarded;
 
+    // 4-2
     // control flow
     wire is_flush;
     wire [31:0] write_data;
-
     // BTB
     wire is_miss;
-    wire [31:0] target;
+    wire [31:0] pred_pc;
     wire [4:0] BHSR;
-    reg [31:0] pc;
+    reg [31:0] correct_pc;
 
     /***** Register declarations *****/
     // TODO You need to modify the width of registers
@@ -91,7 +93,7 @@ module cpu(input reset,       // positive reset signal
     /***** IF/ID pipeline registers *****/
     reg [31:0] IF_ID_inst;           // will be used in ID stage
     // 4-2
-    reg [31:0] IF_ID_pc;
+    reg [31:0] IF_ID_current_pc;
     reg IF_ID_is_flush;
     reg [4:0] IF_ID_BHSR;
 
@@ -113,11 +115,11 @@ module cpu(input reset,       // positive reset signal
     reg [4:0] ID_EX_rs1;
     reg [4:0] ID_EX_rs2;
     // 4-2
-    reg [31:0] ID_EX_pc;
     reg ID_EX_is_jal;
     reg ID_EX_is_jalr;
     reg ID_EX_branch;
-    reg [1:0] pc_src; // ???
+    reg ID_EX_pc_to_reg;
+    reg [31:0] ID_EX_current_pc;
     reg [4:0] ID_EX_BHSR;
 
     /***** EX/MEM pipeline registers *****/
@@ -133,7 +135,8 @@ module cpu(input reset,       // positive reset signal
     reg [4:0] EX_MEM_rd;
     reg EX_MEM_is_halted;
     // 4-2
-    reg [31:0] EX_MEM_pc;
+    reg EX_MEM_pc_to_reg;
+    reg [31:0] EX_MEM_current_pc;
 
     /***** MEM/WB pipeline registers *****/
     // From the control unit
@@ -145,14 +148,15 @@ module cpu(input reset,       // positive reset signal
     reg [4:0] MEM_WB_rd;
     reg MEM_WB_is_halted;
     // 4-2
-    reg [31:0] MEM_WB_pc;
+    reg MEM_WB_pc_to_reg;
+    reg [31:0] MEM_WB_current_pc;
 
     // assign
     assign rs2 = IF_ID_inst[24:20];
     assign is_x17_10 = (rs1_dout_forwarded == 10) & (rs1 == 17);
     assign _is_halted = is_ecall & is_x17_10;
     assign is_halted = MEM_WB_is_halted;
-    assign is_flush = is_missed;
+    assign is_flush = is_miss;
 
     // ---------- Update program counter ----------
     // PC must be updated on the rising edge (positive edge) of the clock.
@@ -160,15 +164,8 @@ module cpu(input reset,       // positive reset signal
         .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
         .clk(clk),         // input
         .pc_write(!is_hazard), // do not write pc if hazard
-        .next_pc(adder1Output),     // input // twomux2Output
+        .next_pc(twomux8Output),     // input
         .current_pc(pcOutput)   // output
-    );
-
-    // pc (& JAL/JALR) mux
-    adder adder1(
-        .x1(pcOutput),
-        .x2(32'b100),
-        .y(adder1Output)
     );
 
     // ---------- Instruction Memory ----------
@@ -183,9 +180,15 @@ module cpu(input reset,       // positive reset signal
     always @(posedge clk) begin
         if (reset) begin
             IF_ID_inst <= 0;
+            IF_ID_current_pc <= 0;
+            IF_ID_is_flush <= 0;
+            IF_ID_BHSR <= 0;
         end
         else if (!is_hazard) begin
             IF_ID_inst <= imemOutput;
+            IF_ID_current_pc <= pcOutput;
+            IF_ID_is_flush <= is_flush;
+            IF_ID_BHSR <= BHSR;
         end
     end
 
@@ -209,6 +212,14 @@ module cpu(input reset,       // positive reset signal
         .y(rs1)
     );
 
+    // write data mux
+    twomux twomux7(
+        .x0(twomux5Output), // rd_din
+        .x1(MEM_WB_current_pc + 4), // pc+4
+        .sel(MEM_WB_pc_to_reg),
+        .y(write_data) // twomux7Output
+    );
+
     // ---------- Register File ----------
     RegisterFile reg_file (
         .reset (reset),        // input
@@ -216,7 +227,7 @@ module cpu(input reset,       // positive reset signal
         .rs1 (rs1),          // input
         .rs2 (rs2),          // input
         .rd (MEM_WB_rd),           // input
-        .rd_din (twomux5Output),       // input // twomux4Output
+        .rd_din (write_data),       // input
         .write_enable (MEM_WB_reg_write),    // input
         .rs1_dout (regfileOutputData1),     // output
         .rs2_dout (regfileOutputData2),      // output
@@ -274,6 +285,13 @@ module cpu(input reset,       // positive reset signal
             ID_EX_is_halted <= 0;
             ID_EX_rs1 <= 0;
             ID_EX_rs2 <= 0;
+
+            ID_EX_is_jal <= 0;
+            ID_EX_is_jalr <= 0;
+            ID_EX_branch <= 0;
+            ID_EX_pc_to_reg <= 0;
+            ID_EX_current_pc <= 0;
+            ID_EX_BHSR <= 0;
         end
         else begin
             //ID_EX_alu_op <= ALU_op;
@@ -291,6 +309,13 @@ module cpu(input reset,       // positive reset signal
             ID_EX_is_halted <= _is_halted;
             ID_EX_rs1 <= rs1;
             ID_EX_rs2 <= rs2;
+
+            ID_EX_is_jal <= is_jal;
+            ID_EX_is_jalr <= is_jalr;
+            ID_EX_branch <= branch;
+            ID_EX_pc_to_reg <= pc_to_reg;
+            ID_EX_current_pc <= IF_ID_current_pc;
+            ID_EX_BHSR <= IF_ID_BHSR;
         end
         if (is_hazard) begin
             ID_EX_reg_write <= 0;
@@ -323,16 +348,16 @@ module cpu(input reset,       // positive reset signal
     // rs1 forwarding mux
     threemux threemux1(
         .x0(ID_EX_rs1_data),
-        .x1(EX_MEM_alu_out),
-        .x2(twomux5Output),
+        .x1(EX_MEM_pc_to_reg ? EX_MEM_current_pc + 4 : EX_MEM_alu_out),
+        .x2(MEM_WB_pc_to_reg ? MEM_WB_current_pc + 4 : twomux5Output),
         .sel(forwardA),
         .y(alu_in_1_forwarded)
     );
     // rs2 forwarding mux
     threemux threemux2(
         .x0(ID_EX_rs2_data),
-        .x1(EX_MEM_alu_out),
-        .x2(twomux5Output),
+        .x1(EX_MEM_pc_to_reg ? EX_MEM_current_pc + 4 : EX_MEM_alu_out),
+        .x2(MEM_WB_pc_to_reg ? MEM_WB_current_pc + 4 : twomux5Output),
         .sel(forwardB),
         .y(alu_in_2_forwarded)
     );
@@ -347,15 +372,11 @@ module cpu(input reset,       // positive reset signal
 
     // ---------- ALU Control Unit ----------
     ALUControlUnit alu_ctrl_unit (
-        // .opcode(IF_ID_inst[6:0]),
-        // .funct3(IF_ID_inst[14:12]),
-        // .funct7_5(IF_ID_inst[30]),
-        // .alu_op(ALU_op)
         .opcode(ID_EX_inst[6:0]),  // input
         .funct3(ID_EX_inst[14:12]),  // input
         .funct7_5(ID_EX_inst[30]),  // input
-        .alu_op(ALU_op)// ,         // output
-        // .btype(btype)         // output
+        .alu_op(ALU_op),         // output
+        .btype(btype)         // output
     );
 
     // ---------- ALU ----------
@@ -379,6 +400,9 @@ module cpu(input reset,       // positive reset signal
             EX_MEM_dmem_data <= 0;
             EX_MEM_rd <= 0;
             EX_MEM_is_halted <= 0;
+
+            EX_MEM_pc_to_reg <= 0;
+            EX_MEM_current_pc <= 0;
         end
         else begin
             EX_MEM_mem_write <= ID_EX_mem_write;
@@ -390,6 +414,9 @@ module cpu(input reset,       // positive reset signal
             EX_MEM_dmem_data <= alu_in_2_forwarded;
             EX_MEM_rd <= ID_EX_rd;
             EX_MEM_is_halted <= ID_EX_is_halted;
+
+            EX_MEM_pc_to_reg <= ID_EX_pc_to_reg;
+            EX_MEM_current_pc <= ID_EX_current_pc;
         end
     end
 
@@ -413,6 +440,9 @@ module cpu(input reset,       // positive reset signal
             MEM_WB_mem_to_reg_src_2 <= 0;
             MEM_WB_is_halted <= 0;
             MEM_WB_rd <= 0;
+
+            MEM_WB_pc_to_reg <= 0;
+            MEM_WB_current_pc <= 0;
         end
         else begin
             MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;
@@ -421,9 +451,53 @@ module cpu(input reset,       // positive reset signal
             MEM_WB_mem_to_reg_src_2 <= dmemOutput;
             MEM_WB_is_halted <= EX_MEM_is_halted;
             MEM_WB_rd <= EX_MEM_rd;
+
+            MEM_WB_pc_to_reg <= EX_MEM_pc_to_reg;
+            MEM_WB_current_pc <= EX_MEM_current_pc;
         end
     end
+
+    // ---------- BTB ----------
+    BTB btb_(
+        .pc(pcOutput),
+        .reset(reset),
+        .clk(clk),
+        .real_pc(ID_EX_current_pc),
+        .pc_plus_imm(ID_EX_current_pc + ID_EX_imm),
+        .reg_plus_imm(ALUOutput),
+        .real_pc_BHSR(ID_EX_BHSR),
+        .alu_bcond(ALU_bcond),
+        .branch(ID_EX_branch),
+        .is_jal(ID_EX_is_jal),
+        .is_jalr(ID_EX_is_jalr),
+        .pred_pc(pred_pc),
+        .BHSR(BHSR)
+    );
     
+    assign twomux8Output = pred_pc;
+
+    // // miss detection
+    // // TODO
+
+    // twomux twomux8(
+    //     .x0(pred_pc),
+    //     .x1(correct_pc),
+    //     .sel(is_miss),
+    //     .y(twomux8Output)
+    // );
+
+    // // calc correct pc
+    // always @(*) begin
+    //     if (ID_EX_branch & ALU_bcond | ID_EX_is_jal) begin
+    //         correct_pc = ID_EX_current_pc + ID_EX_imm; // pc + imm
+    //     end
+    //     else if (ID_EX_is_jalr) begin
+    //         correct_pc = ALUOutput; // reg + imm
+    //     end
+    //     else begin
+    //         correct_pc = ID_EX_current_pc + 4;
+    //     end
+    // end
 
     // ---------- Other UNUSED Modules ----------
     

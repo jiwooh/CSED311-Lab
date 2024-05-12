@@ -5,20 +5,20 @@ module ALUControlUnit (
     input [6:0] opcode,  
     input [2:0] funct3, 
     input funct7_5, 
-    output reg [2:0] alu_op//,       
-    //output reg [2:0] btype
+    output reg [2:0] alu_op,     
+    output reg [2:0] btype
 );
 
     // initialize
     initial begin
         alu_op = `NOT_FUNC;
-        //btype=`NOT_BRANCH;
+        btype=`NOT_BRANCH;
     end
 
     // change control values
     always@(*) begin
         alu_op = `NOT_FUNC;
-        //btype=`NOT_BRANCH;
+        btype=`NOT_BRANCH;
         case(opcode)
             //based on funct3, funct7
             `ARITHMETIC: begin
@@ -55,19 +55,19 @@ module ALUControlUnit (
                 alu_op=`FUNC_ADD;
             end
             // branch setting
-            // `BRANCH: begin
-            //     alu_op = `FUNC_SUB;
-            //     case (funct3) 
-            //         `FUNCT3_BEQ: btype = `BRANCH_EQ;
-            //         `FUNCT3_BNE: btype = `BRANCH_NE;
-            //         `FUNCT3_BLT: btype = `BRANCH_LT;
-            //         `FUNCT3_BGE: btype = `BRANCH_GE;
-            //         default: btype = `NOT_BRANCH;
-            //     endcase
-            // end
+            `BRANCH: begin
+                alu_op = `FUNC_SUB;
+                case (funct3) 
+                    `FUNCT3_BEQ: btype = `BRANCH_EQ;
+                    `FUNCT3_BNE: btype = `BRANCH_NE;
+                    `FUNCT3_BLT: btype = `BRANCH_LT;
+                    `FUNCT3_BGE: btype = `BRANCH_GE;
+                    default: btype = `NOT_BRANCH;
+                endcase
+            end
             default: begin
                 alu_op = `NOT_FUNC;
-                //btype=`NOT_BRANCH;
+                btype=`NOT_BRANCH;
             end
         endcase
     end

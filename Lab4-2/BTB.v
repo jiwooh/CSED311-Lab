@@ -1,0 +1,130 @@
+module BTB (
+    input [31:0] pc,
+    input reset,
+    input clk,
+    input [31:0] real_pc,
+    input [31:0] pc_plus_imm,  // for branch & jal
+    input [31:0] reg_plus_imm, // for jalr
+    input [4:0] real_pc_BHSR,
+    input alu_bcond,
+    input branch,
+    input is_jal,
+    input is_jalr,
+    output reg [31:0] pred_pc,
+    output reg [4:0] BHSR   // //////////TODO/////////// why 5 bits ???
+);
+
+    // tag table + btb + pht
+    reg [4:0]  idx;
+    reg [31:0] tag_table [0:31];
+    reg [31:0] btb       [0:31]; // 32 entry btb
+    reg [1:0]  pht       [0:31]; // 2-bit prediction
+
+    // input query
+    wire [31:0] query_tag;
+    wire [4:0]  query_idx;
+    // real pc
+    wire [4:0]  real_pc_idx;
+    wire [31:0] real_pc_tag;
+    wire taken;
+
+    assign query_tag = pc[31:0];
+    assign query_idx = pc[6:2] ^ BHSR;
+
+    assign real_pc_tag = real_pc[31:0];
+    assign real_pc_idx = real_pc[6:2] ^ real_pc_BHSR;
+
+    assign taken = (branch & alu_bcond) | is_jal | is_jalr;
+
+    reg [31:0] dest; // temporary wire for convenience
+
+    // 0. initialization
+    always @(posedge clk) begin
+        if (reset) begin
+            for (idx = 0; idx > 31; idx++) begin
+                btb[idx] = 0; // empty btb
+                tag_table[idx] = -1; //////////TODO/////////// why -1 ???
+                pht[idx] = 2'b00;
+            end
+            BHSR = 5'b00000;
+        end
+    end
+
+    // 2. ???
+    always @(*) begin
+        if (is_jal | branch) begin // destination = pc + imm
+            dest = pc_plus_imm;
+            if (real_pc_tag != tag_table[real_pc_idx] | dest != btb[real_pc_idx]) begin
+                tag_table[real_pc_idx] = real_pc_tag;
+                btb[real_pc_idx] = dest;
+            end
+        end
+        else if (is_jalr) begin // destination = reg + imm
+            dest = reg_plus_imm;
+            if (real_pc_tag != tag_table[real_pc_idx] | dest != btb[real_pc_idx]) begin
+                tag_table[real_pc_idx] = real_pc_tag;
+                btb[real_pc_idx] = dest;
+            end
+        end
+    end
+
+    // 3. pht : 2-bit prediction
+    always @(*) begin
+        if (branch | is_jal | is_jalr) begin 
+            if (taken) begin
+                case (pht[real_pc_idx])
+                    2'b00: pht[real_pc_idx] = 2'b01;
+                    2'b01: pht[real_pc_idx] = 2'b10;
+                    2'b10: pht[real_pc_idx] = 2'b11;
+                    2'b11: pht[real_pc_idx] = 2'b11;
+                endcase
+                BHSR = (BHSR << 1) + 1;
+            end
+            else begin // not taken
+                case (pht[real_pc_idx])
+                    2'b00: pht[real_pc_idx] = 2'b00;
+                    2'b01: pht[real_pc_idx] = 2'b00;
+                    2'b10: pht[real_pc_idx] = 2'b01;
+                    2'b11: pht[real_pc_idx] = 2'b10;
+                endcase
+                BHSR = (BHSR << 1) + 0;
+            end
+        end
+    end
+
+    // 4. finally check "taken?"
+    always @(*) begin
+        if ((query_tag == tag_table[query_idx]) & (pht[query_idx] >= 2'b10)) begin
+            pred_pc = btb[query_idx];
+        end
+        else begin
+            pred_pc = pc + 4;
+        end
+    end
+endmodule
+
+
+// module MissPredDetector(input [31:0] IF_ID_pc,
+//                         input ID_EX_is_jal,
+//                         input ID_EX_is_jalr,
+//                         input ID_EX_branch,
+//                         input ID_EX_bcond,
+//                         input [31:0] ID_EX_pc,
+//                         input [31:0] pc_plus_imm,
+//                         input [31:0] reg_plus_imm,
+//                         output reg is_miss_pred);
+
+//   wire is_jal_or_taken = (ID_EX_is_jal | (ID_EX_branch & ID_EX_bcond)) & (IF_ID_pc != pc_plus_imm);
+//   wire is_jalr_or_taken  = (ID_EX_is_jalr) & (IF_ID_pc != reg_plus_imm);
+//   wire is_branch  = (IF_ID_pc != ID_EX_pc+4) & (ID_EX_branch & !ID_EX_bcond);
+
+//   always @(*) begin
+//     if(is_jal_or_taken | is_jalr_or_taken | is_branch) begin
+//       is_miss_pred=1;
+//     end
+//     else begin
+//       is_miss_pred=0;
+//     end 
+//   end
+
+// endmodule
