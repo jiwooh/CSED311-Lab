@@ -26,9 +26,9 @@ module cpu(input reset,       // positive reset signal
     wire [31:0] regfileOutputData2;
 
     // 4. ControlUnit
-    // wire is_jalr;
-    // wire is_jal;
-    // wire branch;
+    wire is_jalr;
+    wire is_jal;
+    wire branch;
     wire mem_read;
     wire mem_to_reg;
     wire mem_write;
@@ -42,11 +42,11 @@ module cpu(input reset,       // positive reset signal
 
     // 6. ALUControlUnit
     wire [2:0] ALU_op;
-    // wire [2:0] btype;
+    wire [2:0] btype;
 
     // 7. ALU
     wire [31:0] ALUOutput;
-    // wire ALU_bcond;
+    wire ALU_bcond;
 
     // 8. DataMemory
     wire [31:0] dmemOutput;
@@ -73,6 +73,16 @@ module cpu(input reset,       // positive reset signal
     reg [31:0] rs1_dout_forwarded;
     reg [31:0] rs2_dout_forwarded;
 
+    // control flow
+    wire is_flush;
+    wire [31:0] write_data;
+
+    // BTB
+    wire is_miss;
+    wire [31:0] target;
+    wire [4:0] BHSR;
+    reg [31:0] pc;
+
     /***** Register declarations *****/
     // TODO You need to modify the width of registers
     // In addition, 
@@ -80,6 +90,10 @@ module cpu(input reset,       // positive reset signal
     // 2. You might not need registers described below
     /***** IF/ID pipeline registers *****/
     reg [31:0] IF_ID_inst;           // will be used in ID stage
+    // 4-2
+    reg [31:0] IF_ID_pc;
+    reg IF_ID_is_flush;
+    reg [4:0] IF_ID_BHSR;
 
     /***** ID/EX pipeline registers *****/
     // From the control unit
@@ -98,6 +112,13 @@ module cpu(input reset,       // positive reset signal
     reg ID_EX_is_halted;
     reg [4:0] ID_EX_rs1;
     reg [4:0] ID_EX_rs2;
+    // 4-2
+    reg [31:0] ID_EX_pc;
+    reg ID_EX_is_jal;
+    reg ID_EX_is_jalr;
+    reg ID_EX_branch;
+    reg [1:0] pc_src; // ???
+    reg [4:0] ID_EX_BHSR;
 
     /***** EX/MEM pipeline registers *****/
     // From the control unit
@@ -111,6 +132,8 @@ module cpu(input reset,       // positive reset signal
     reg [31:0] EX_MEM_dmem_data;
     reg [4:0] EX_MEM_rd;
     reg EX_MEM_is_halted;
+    // 4-2
+    reg [31:0] EX_MEM_pc;
 
     /***** MEM/WB pipeline registers *****/
     // From the control unit
@@ -121,13 +144,15 @@ module cpu(input reset,       // positive reset signal
     reg [31:0] MEM_WB_mem_to_reg_src_2;
     reg [4:0] MEM_WB_rd;
     reg MEM_WB_is_halted;
+    // 4-2
+    reg [31:0] MEM_WB_pc;
 
     // assign
     assign rs2 = IF_ID_inst[24:20];
     assign is_x17_10 = (rs1_dout_forwarded == 10) & (rs1 == 17);
     assign _is_halted = is_ecall & is_x17_10;
     assign is_halted = MEM_WB_is_halted;
-
+    assign is_flush = is_missed;
 
     // ---------- Update program counter ----------
     // PC must be updated on the rising edge (positive edge) of the clock.
