@@ -269,7 +269,7 @@ module cpu(input reset,       // positive reset signal
 
     // Update ID/EX pipeline registers here
     always @(posedge clk) begin
-        if (reset) begin
+        if (reset | IF_ID_is_flush) begin
             //ID_EX_alu_op <= 0;
             ID_EX_alu_src <= 0;
             ID_EX_mem_write <= 0;
