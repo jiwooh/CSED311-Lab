@@ -43,8 +43,10 @@ module BTB (
     reg [31:0] dest; // temporary wire for convenience
 
     // 1. initialization
+    initial begin 
+        BHSR_tmp = BHSR;
+    end
     always @(posedge clk) begin
-        // TODO ERROR : Blocking assignment '=' in sequential logic process
         if (reset) begin
             for (idx = 0; idx <= 31; idx = idx + 1) begin
                 btb[idx] <= 0; // empty btb
@@ -52,7 +54,7 @@ module BTB (
                 pht[idx] <= 2'b00;
             end
         end
-        // TODO ERROR : Blocked and non-blocking assignments to same variable
+        // TODO ERROR FIXED? : Blocked and non-blocking assignments to same variable [BHSR]
         BHSR_tmp <= 0;
     end
 
@@ -79,6 +81,7 @@ module BTB (
     // 3. pht : 2-bit prediction
     always @(*) begin
         if (branch | is_jal | is_jalr) begin 
+            // TODO ERROR : Signal unoptimizable: Circular combinational logic [pht]
             if (taken) begin
                 case (pht[real_pc_idx])
                     2'b00: pht[real_pc_idx] = 2'b01;
@@ -98,8 +101,8 @@ module BTB (
             end
         end else begin
             pht[real_pc_idx] = 0;
-            // TODO ERROR
-            // Signal unoptimizable: Circular combinational logic
+            // TODO ERROR FIXED? 
+            // Signal unoptimizable: Circular combinational logic [BHSR]
             // BHSR = (BHSR << 1) + 0; // assigned random value since it will be not used
         end
     end
