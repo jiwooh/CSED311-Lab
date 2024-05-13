@@ -1,9 +1,9 @@
 `include "opcodes.v"
 module ControlUnit (
     input [6:0] part_of_inst,
-    // output reg is_jal,
-    // output reg is_jalr,
-    // output reg branch,
+    output reg is_jal,
+    output reg is_jalr,
+    output reg branch,
     output reg mem_read,
     output reg mem_to_reg,
     output reg mem_write,
@@ -14,9 +14,9 @@ module ControlUnit (
 );
   // setting control values
   always @(*) begin
-    // is_jal = (part_of_inst == `JAL);
-    // is_jalr = (part_of_inst == `JALR);
-    // branch = (part_of_inst == `BRANCH);
+    is_jal = (part_of_inst == `JAL);
+    is_jalr = (part_of_inst == `JALR);
+    branch = (part_of_inst == `BRANCH);
     mem_read = (part_of_inst == `LOAD);
     mem_to_reg = (part_of_inst == `LOAD);
     mem_write = (part_of_inst == `STORE);

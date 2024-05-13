@@ -60,28 +60,25 @@ module BTB (
 
     // 2. real pc calculation
     always @(*) begin
-        dest = 0;
         tag_table[real_pc_idx] = 0;
         btb[real_pc_idx] = 0;
+        dest = 0;
         if (is_jal | branch) begin // destination = pc + imm
             dest = pc_plus_imm;
-            if (real_pc_tag != tag_table[real_pc_idx] | dest != btb[real_pc_idx]) begin
-                tag_table[real_pc_idx] = real_pc_tag;
-                btb[real_pc_idx] = dest;
-            end
         end else if (is_jalr) begin // destination = reg + imm
             dest = reg_plus_imm;
-            if (real_pc_tag != tag_table[real_pc_idx] | dest != btb[real_pc_idx]) begin
-                tag_table[real_pc_idx] = real_pc_tag;
-                btb[real_pc_idx] = dest;
-            end
+        end
+
+        if (real_pc_tag != tag_table[real_pc_idx] | dest != btb[real_pc_idx]) begin
+            tag_table[real_pc_idx] = real_pc_tag;
+            btb[real_pc_idx] = dest;
         end
     end
 
     // 3. pht : 2-bit prediction
     always @(*) begin
+        pht[real_pc_idx] = 0;
         if (branch | is_jal | is_jalr) begin 
-            // TODO ERROR : Signal unoptimizable: Circular combinational logic [pht]
             if (taken) begin
                 case (pht[real_pc_idx])
                     2'b00: pht[real_pc_idx] = 2'b01;
@@ -89,7 +86,6 @@ module BTB (
                     2'b10: pht[real_pc_idx] = 2'b11;
                     2'b11: pht[real_pc_idx] = 2'b11;
                 endcase
-                // BHSR = (BHSR << 1) + 1;
             end else begin // not taken
                 case (pht[real_pc_idx])
                     2'b00: pht[real_pc_idx] = 2'b00;
@@ -97,13 +93,7 @@ module BTB (
                     2'b10: pht[real_pc_idx] = 2'b01;
                     2'b11: pht[real_pc_idx] = 2'b10;
                 endcase
-                // BHSR = (BHSR << 1) + 0;
             end
-        end else begin
-            pht[real_pc_idx] = 0;
-            // TODO ERROR FIXED? 
-            // Signal unoptimizable: Circular combinational logic [BHSR]
-            // BHSR = (BHSR << 1) + 0; // assigned random value since it will be not used
         end
     end
 

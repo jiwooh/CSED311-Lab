@@ -80,7 +80,7 @@ module cpu(input reset,       // positive reset signal
     wire is_flush;
     wire [31:0] write_data;
     // BTB
-    wire is_miss;
+    reg is_miss;
     wire [31:0] pred_pc;
     wire [4:0] BHSR;
     reg [31:0] correct_pc;
@@ -252,6 +252,9 @@ module cpu(input reset,       // positive reset signal
     // ---------- Control Unit ----------
     ControlUnit ctrl_unit (
         .part_of_inst(IF_ID_inst[6:0]),  // input
+        .is_jal(is_jal),        // output
+        .is_jalr(is_jalr),       // output
+        .branch(branch),       // output
         .mem_read(mem_read),      // output
         .mem_to_reg(mem_to_reg),    // output
         .mem_write(mem_write),     // output
@@ -474,30 +477,33 @@ module cpu(input reset,       // positive reset signal
         .BHSR(BHSR)
     );
     
-    assign twomux8Output = pred_pc;
+    //assign twomux8Output = pred_pc;
 
-    // // miss detection
-    // // TODO
+    // miss detection
+    // TODO
 
-    // twomux twomux8(
-    //     .x0(pred_pc),
-    //     .x1(correct_pc),
-    //     .sel(is_miss),
-    //     .y(twomux8Output)
-    // );
+    twomux twomux8(
+        .x0(pred_pc),
+        .x1(correct_pc),
+        .sel(is_miss),
+        .y(twomux8Output)
+    );
 
-    // // calc correct pc
-    // always @(*) begin
-    //     if (ID_EX_branch & ALU_bcond | ID_EX_is_jal) begin
-    //         correct_pc = ID_EX_current_pc + ID_EX_imm; // pc + imm
-    //     end
-    //     else if (ID_EX_is_jalr) begin
-    //         correct_pc = ALUOutput; // reg + imm
-    //     end
-    //     else begin
-    //         correct_pc = ID_EX_current_pc + 4;
-    //     end
-    // end
+    // calc correct pc
+    always @(*) begin
+        is_miss=0;
+        if ((ID_EX_branch & ALU_bcond) | ID_EX_is_jal) begin
+            correct_pc = ID_EX_current_pc + ID_EX_imm; // pc + imm
+            is_miss = pred_pc == correct_pc;
+        end
+        else if (ID_EX_is_jalr) begin
+            correct_pc = ALUOutput; // reg + imm
+            is_miss = pred_pc == correct_pc;
+        end
+        else begin
+            correct_pc = ID_EX_current_pc + 4;
+        end
+    end
 
     // ---------- Other UNUSED Modules ----------
     
