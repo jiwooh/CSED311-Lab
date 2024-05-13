@@ -38,7 +38,10 @@ module BTB (
 
     reg [31:0] dest; // temporary wire for convenience
 
-    // 0. initialization
+    // 1. initialization
+    initial begin
+        BHSR = 0; // 여기서 이러면 안됨, 아래서 안되서 일단 옮겨두긴 했는데 BHSR도 0으로 reset해야되잖음
+    end
     always @(posedge clk) begin
         if (reset) begin
             for (idx = 0; idx > 31; idx++) begin
@@ -46,20 +49,23 @@ module BTB (
                 tag_table[idx] = -1; //////////TODO/////////// why -1 ???
                 pht[idx] = 2'b00;
             end
-            BHSR = 5'b00000;
         end
+        // TODO ERROR : Blocking assignment '=' in sequential logic process
+        // BHSR = 0; // 이거 왜 안됨 위에 3개도 reg고 '='쓰는데
     end
 
-    // 2. ???
+    // 2. real pc calculation
     always @(*) begin
+        dest = 0;
+        tag_table[real_pc_idx] = 0;
+        btb[real_pc_idx] = 0;
         if (is_jal | branch) begin // destination = pc + imm
             dest = pc_plus_imm;
             if (real_pc_tag != tag_table[real_pc_idx] | dest != btb[real_pc_idx]) begin
                 tag_table[real_pc_idx] = real_pc_tag;
                 btb[real_pc_idx] = dest;
             end
-        end
-        else if (is_jalr) begin // destination = reg + imm
+        end else if (is_jalr) begin // destination = reg + imm
             dest = reg_plus_imm;
             if (real_pc_tag != tag_table[real_pc_idx] | dest != btb[real_pc_idx]) begin
                 tag_table[real_pc_idx] = real_pc_tag;
@@ -79,8 +85,7 @@ module BTB (
                     2'b11: pht[real_pc_idx] = 2'b11;
                 endcase
                 BHSR = (BHSR << 1) + 1;
-            end
-            else begin // not taken
+            end else begin // not taken
                 case (pht[real_pc_idx])
                     2'b00: pht[real_pc_idx] = 2'b00;
                     2'b01: pht[real_pc_idx] = 2'b00;
@@ -89,6 +94,13 @@ module BTB (
                 endcase
                 BHSR = (BHSR << 1) + 0;
             end
+        end else begin
+            // TODO ERROR
+            // %Warning-LATCH: BTB.v:74:5: Latch inferred for signal 'top.cpu.BHSR' (not all control paths of combinational always assign a value)
+            // 이거 해결하려고 0 대입하는거로 해놨는데 이러면 안되잖음
+            pht[real_pc_idx] = 0;
+            BHSR = 0;
+            // BHSR = BHSR; // 이러면 Signal unoptimizable: Circular combinational logic 뜸
         end
     end
 
@@ -96,8 +108,7 @@ module BTB (
     always @(*) begin
         if ((query_tag == tag_table[query_idx]) & (pht[query_idx] >= 2'b10)) begin
             pred_pc = btb[query_idx];
-        end
-        else begin
+        end else begin
             pred_pc = pc + 4;
         end
     end
