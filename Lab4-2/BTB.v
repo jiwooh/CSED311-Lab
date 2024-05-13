@@ -11,11 +11,11 @@ module BTB (
     input is_jal,
     input is_jalr,
     output reg [31:0] pred_pc,
-    output reg [4:0] BHSR   // //////////TODO/////////// why 5 bits ???
+    output reg [4:0] BHSR   // TODO QUESTION : why 5 bits ?????????????
 );
 
     // tag table + btb + pht
-    reg [4:0]  idx;
+    integer idx;
     reg [31:0] tag_table [0:31];
     reg [31:0] btb       [0:31]; // 32 entry btb
     reg [1:0]  pht       [0:31]; // 2-bit prediction
@@ -36,22 +36,24 @@ module BTB (
 
     assign taken = (branch & alu_bcond) | is_jal | is_jalr;
 
+    // to fix UNOPTFLAT error
+    reg [4:0] BHSR_tmp;
+    assign BHSR = (BHSR_tmp << 1) + {4'b0, taken};
+
     reg [31:0] dest; // temporary wire for convenience
 
     // 1. initialization
-    initial begin
-        BHSR = 0; // 여기서 이러면 안됨, 아래서 안되서 일단 옮겨두긴 했는데 BHSR도 0으로 reset해야되잖음
-    end
     always @(posedge clk) begin
+        // TODO ERROR : Blocking assignment '=' in sequential logic process
         if (reset) begin
-            for (idx = 0; idx > 31; idx++) begin
-                btb[idx] = 0; // empty btb
-                tag_table[idx] = -1; //////////TODO/////////// why -1 ???
-                pht[idx] = 2'b00;
+            for (idx = 0; idx <= 31; idx = idx + 1) begin
+                btb[idx] <= 0; // empty btb
+                tag_table[idx] <= -1; // invalid tag
+                pht[idx] <= 2'b00;
             end
         end
-        // TODO ERROR : Blocking assignment '=' in sequential logic process
-        // BHSR = 0; // 이거 왜 안됨 위에 3개도 reg고 '='쓰는데
+        // TODO ERROR : Blocked and non-blocking assignments to same variable
+        BHSR_tmp <= 0;
     end
 
     // 2. real pc calculation
@@ -84,7 +86,7 @@ module BTB (
                     2'b10: pht[real_pc_idx] = 2'b11;
                     2'b11: pht[real_pc_idx] = 2'b11;
                 endcase
-                BHSR = (BHSR << 1) + 1;
+                // BHSR = (BHSR << 1) + 1;
             end else begin // not taken
                 case (pht[real_pc_idx])
                     2'b00: pht[real_pc_idx] = 2'b00;
@@ -92,15 +94,13 @@ module BTB (
                     2'b10: pht[real_pc_idx] = 2'b01;
                     2'b11: pht[real_pc_idx] = 2'b10;
                 endcase
-                BHSR = (BHSR << 1) + 0;
+                // BHSR = (BHSR << 1) + 0;
             end
         end else begin
-            // TODO ERROR
-            // %Warning-LATCH: BTB.v:74:5: Latch inferred for signal 'top.cpu.BHSR' (not all control paths of combinational always assign a value)
-            // 이거 해결하려고 0 대입하는거로 해놨는데 이러면 안되잖음
             pht[real_pc_idx] = 0;
-            BHSR = 0;
-            // BHSR = BHSR; // 이러면 Signal unoptimizable: Circular combinational logic 뜸
+            // TODO ERROR
+            // Signal unoptimizable: Circular combinational logic
+            // BHSR = (BHSR << 1) + 0; // assigned random value since it will be not used
         end
     end
 
