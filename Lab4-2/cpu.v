@@ -82,6 +82,8 @@ module cpu(input reset,       // positive reset signal
     // BTB
     reg is_miss;
     wire [31:0] pred_pc;
+    reg [31:0] IF_ID_pred_pc;
+    reg [31:0] ID_EX_pred_pc;
     wire [4:0] BHSR;
     reg [31:0] correct_pc;
 
@@ -131,12 +133,18 @@ module cpu(input reset,       // positive reset signal
     reg EX_MEM_reg_write;     // will be used in WB stage
     // From others
     reg [31:0] EX_MEM_alu_out;
+    reg EX_MEM_alu_bcond;
+    reg EX_MEM_branch;
+    reg EX_MEM_is_jal;
+    reg EX_MEM_is_jalr;
     reg [31:0] EX_MEM_dmem_data;
     reg [4:0] EX_MEM_rd;
     reg EX_MEM_is_halted;
     // 4-2
     reg EX_MEM_pc_to_reg;
     reg [31:0] EX_MEM_current_pc;
+    reg [31:0] EX_MEM_pred_pc;
+    reg [31:0] EX_MEM_imm;
 
     /***** MEM/WB pipeline registers *****/
     // From the control unit
@@ -183,12 +191,15 @@ module cpu(input reset,       // positive reset signal
             IF_ID_current_pc <= 0;
             IF_ID_is_flush <= 0;
             IF_ID_BHSR <= 0;
+            IF_ID_pred_pc <= 0;
         end
         else if (!is_hazard) begin
             IF_ID_inst <= imemOutput;
             IF_ID_current_pc <= pcOutput;
             IF_ID_is_flush <= is_flush;
             IF_ID_BHSR <= BHSR;
+            IF_ID_pred_pc <= pred_pc;
+            
         end
     end
 
@@ -294,6 +305,7 @@ module cpu(input reset,       // positive reset signal
             ID_EX_branch <= 0;
             ID_EX_pc_to_reg <= 0;
             ID_EX_current_pc <= 0;
+            ID_EX_pred_pc <= 0;
             ID_EX_BHSR <= 0;
         end
         else begin
@@ -318,11 +330,13 @@ module cpu(input reset,       // positive reset signal
             ID_EX_branch <= branch;
             ID_EX_pc_to_reg <= pc_to_reg;
             ID_EX_current_pc <= IF_ID_current_pc;
+            ID_EX_pred_pc <= IF_ID_pred_pc;
             ID_EX_BHSR <= IF_ID_BHSR;
         end
         if (is_hazard) begin
             ID_EX_reg_write <= 0;
             ID_EX_mem_write <= 0;
+            ID_EX_mem_read <= 0;
             ID_EX_rd <= 5'b0;
         end
     end
@@ -385,10 +399,11 @@ module cpu(input reset,       // positive reset signal
     // ---------- ALU ----------
     ALU alu (
         .alu_op(ALU_op),      // input
+        .btype(btype),      // input
         .alu_in_1(alu_in_1_forwarded),    // input  // regfileOutputData1
         .alu_in_2(twomux3Output),    // input // regfileOutputData2
-        .alu_res(ALUOutput)//,  // output
-        //.alu_zero()     // output
+        .alu_res(ALUOutput),  // output
+        .alu_bcond(ALU_bcond)//,  // output
     );
 
     // Update EX/MEM pipeline registers here
@@ -400,9 +415,13 @@ module cpu(input reset,       // positive reset signal
             EX_MEM_reg_write <= 0;
 
             EX_MEM_alu_out <= 0;
+            EX_MEM_alu_bcond <= 0;
+            EX_MEM_branch <= 0;
             EX_MEM_dmem_data <= 0;
             EX_MEM_rd <= 0;
             EX_MEM_is_halted <= 0;
+            EX_MEM_is_jal <= 0;
+            EX_MEM_is_jalr <= 0;
 
             EX_MEM_pc_to_reg <= 0;
             EX_MEM_current_pc <= 0;
@@ -414,12 +433,18 @@ module cpu(input reset,       // positive reset signal
             EX_MEM_reg_write <= ID_EX_reg_write;
 
             EX_MEM_alu_out <= ALUOutput;
+            EX_MEM_alu_bcond <= ALU_bcond;
+            EX_MEM_branch <= ID_EX_branch;
             EX_MEM_dmem_data <= alu_in_2_forwarded;
             EX_MEM_rd <= ID_EX_rd;
             EX_MEM_is_halted <= ID_EX_is_halted;
+            EX_MEM_is_jal <= ID_EX_is_jal;
+            EX_MEM_is_jalr <= ID_EX_is_jalr;
 
             EX_MEM_pc_to_reg <= ID_EX_pc_to_reg;
             EX_MEM_current_pc <= ID_EX_current_pc;
+            EX_MEM_pred_pc <= ID_EX_pred_pc;
+            EX_MEM_imm <= ID_EX_imm;
         end
     end
 
@@ -479,9 +504,6 @@ module cpu(input reset,       // positive reset signal
     
     //assign twomux8Output = pred_pc;
 
-    // miss detection
-    // TODO
-
     twomux twomux8(
         .x0(pred_pc),
         .x1(correct_pc),
@@ -492,16 +514,16 @@ module cpu(input reset,       // positive reset signal
     // calc correct pc
     always @(*) begin
         is_miss=0;
-        if ((ID_EX_branch & ALU_bcond) | ID_EX_is_jal) begin
-            correct_pc = ID_EX_current_pc + ID_EX_imm; // pc + imm
-            is_miss = pred_pc == correct_pc;
+        if ((EX_MEM_branch && EX_MEM_alu_bcond) || EX_MEM_is_jal) begin
+            correct_pc = EX_MEM_current_pc + EX_MEM_imm; // pc + imm
+            is_miss = EX_MEM_pred_pc != correct_pc;
         end
-        else if (ID_EX_is_jalr) begin
-            correct_pc = ALUOutput; // reg + imm
-            is_miss = pred_pc == correct_pc;
+        else if (EX_MEM_is_jalr) begin
+            correct_pc = EX_MEM_alu_out; // reg + imm
+            is_miss = EX_MEM_pred_pc != correct_pc;
         end
         else begin
-            correct_pc = ID_EX_current_pc + 4;
+            correct_pc = EX_MEM_current_pc + 4;
         end
     end
 

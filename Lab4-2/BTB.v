@@ -106,29 +106,3 @@ module BTB (
         end
     end
 endmodule
-
-
-// module MissPredDetector(input [31:0] IF_ID_pc,
-//                         input ID_EX_is_jal,
-//                         input ID_EX_is_jalr,
-//                         input ID_EX_branch,
-//                         input ID_EX_bcond,
-//                         input [31:0] ID_EX_pc,
-//                         input [31:0] pc_plus_imm,
-//                         input [31:0] reg_plus_imm,
-//                         output reg is_miss_pred);
-
-//   wire is_jal_or_taken = (ID_EX_is_jal | (ID_EX_branch & ID_EX_bcond)) & (IF_ID_pc != pc_plus_imm);
-//   wire is_jalr_or_taken  = (ID_EX_is_jalr) & (IF_ID_pc != reg_plus_imm);
-//   wire is_branch  = (IF_ID_pc != ID_EX_pc+4) & (ID_EX_branch & !ID_EX_bcond);
-
-//   always @(*) begin
-//     if(is_jal_or_taken | is_jalr_or_taken | is_branch) begin
-//       is_miss_pred=1;
-//     end
-//     else begin
-//       is_miss_pred=0;
-//     end 
-//   end
-
-// endmodule
