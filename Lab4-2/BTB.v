@@ -34,6 +34,9 @@ module BTB (
     assign real_pc_tag = real_pc[31:0];
     assign real_pc_idx = real_pc[6:2] ^ real_pc_BHSR;
 
+    reg [4:0] BHSR_tmp;
+    assign BHSR = (BHSR_tmp << 1) + {4'b0, taken};
+
     assign taken = (branch & alu_bcond) | is_jal | is_jalr;
 
     reg [31:0] dest; // temporary wire for convenience
@@ -42,7 +45,9 @@ module BTB (
         if (reset) begin
             for (idx = 0; idx <= 31; idx = idx + 1) begin
                 btb[idx] <= 0; // empty btb
+                tag_table[idx] <= -1; // invalid tag
                 pht[idx] <= 2'b00;
+                BHSR_tmp<=0;
             end
         end
         else begin
@@ -52,7 +57,9 @@ module BTB (
                 dest <= reg_plus_imm;
             end
 
-            if ((is_jal | branch| is_jalr )&&(dest != btb[real_pc_idx])) begin
+            if ((is_jal | branch| is_jalr ) &&
+                (real_pc_tag != tag_table[real_pc_idx] | dest != btb[real_pc_idx])) begin
+                tag_table[real_pc_idx] <= real_pc_tag;
                 btb[real_pc_idx] <= dest;
             end
             
@@ -79,7 +86,9 @@ module BTB (
 
     // 4. finally check "taken?"
     always @(*) begin
-        if ( (branch | is_jal | is_jalr) && (pht[query_idx] >= 2'b10)) begin
+        if ( (branch | is_jal | is_jalr) 
+            && (query_tag == tag_table[query_idx]) 
+            && (pht[query_idx] >= 2'b10)) begin
             pred_pc = btb[query_idx];
         end else begin
             pred_pc = pc + 4;
