@@ -96,7 +96,6 @@ module cpu(input reset,       // positive reset signal
     reg [31:0] IF_ID_inst;           // will be used in ID stage
     // 4-2
     reg [31:0] IF_ID_current_pc;
-    reg IF_ID_is_flush;
     reg [4:0] IF_ID_BHSR;
 
     /***** ID/EX pipeline registers *****/
@@ -186,17 +185,15 @@ module cpu(input reset,       // positive reset signal
 
     // Update IF/ID pipeline registers here
     always @(posedge clk) begin
-        if (reset) begin
+        if (reset | is_flush) begin
             IF_ID_inst <= 0;
             IF_ID_current_pc <= 0;
-            IF_ID_is_flush <= 0;
             IF_ID_BHSR <= 0;
-            IF_ID_pred_pc <= 0;
+            IF_ID_pred_pc <= 0; 
         end
         else if (!is_hazard) begin
             IF_ID_inst <= imemOutput;
             IF_ID_current_pc <= pcOutput;
-            IF_ID_is_flush <= is_flush;
             IF_ID_BHSR <= BHSR;
             IF_ID_pred_pc <= pred_pc;
             
@@ -283,7 +280,7 @@ module cpu(input reset,       // positive reset signal
 
     // Update ID/EX pipeline registers here
     always @(posedge clk) begin
-        if (reset | IF_ID_is_flush) begin
+        if (reset | is_flush) begin//IF_ID_is_flush) begin
             //ID_EX_alu_op <= 0;
             ID_EX_alu_src <= 0;
             ID_EX_mem_write <= 0;
@@ -366,7 +363,7 @@ module cpu(input reset,       // positive reset signal
     threemux threemux1(
         .x0(ID_EX_rs1_data),
         .x1(EX_MEM_pc_to_reg ? EX_MEM_current_pc + 4 : EX_MEM_alu_out),
-        .x2(MEM_WB_pc_to_reg ? MEM_WB_current_pc + 4 : twomux5Output),
+        .x2(write_data),
         .sel(forwardA),
         .y(alu_in_1_forwarded)
     );
@@ -408,7 +405,7 @@ module cpu(input reset,       // positive reset signal
 
     // Update EX/MEM pipeline registers here
     always @(posedge clk) begin
-        if (reset) begin
+        if (reset | is_flush) begin//ID_EX_is_flush) begin
             EX_MEM_mem_write <= 0;
             EX_MEM_mem_read <= 0;
             EX_MEM_mem_to_reg <= 0;
@@ -461,7 +458,7 @@ module cpu(input reset,       // positive reset signal
 
     // Update MEM/WB pipeline registers here
     always @(posedge clk) begin
-        if (reset) begin
+        if (reset | is_flush) begin//EX_MEM_is_flush) begin
             MEM_WB_mem_to_reg <= 0;
             MEM_WB_reg_write <= 0;
             MEM_WB_mem_to_reg_src_1 <= 0;
@@ -516,11 +513,11 @@ module cpu(input reset,       // positive reset signal
         is_miss=0;
         if ((EX_MEM_branch && EX_MEM_alu_bcond) || EX_MEM_is_jal) begin
             correct_pc = EX_MEM_current_pc + EX_MEM_imm; // pc + imm
-            is_miss = EX_MEM_pred_pc != correct_pc;
+            is_miss = pred_pc != correct_pc;
         end
         else if (EX_MEM_is_jalr) begin
             correct_pc = EX_MEM_alu_out; // reg + imm
-            is_miss = EX_MEM_pred_pc != correct_pc;
+            is_miss = pred_pc != correct_pc;
         end
         else begin
             correct_pc = EX_MEM_current_pc + 4;
