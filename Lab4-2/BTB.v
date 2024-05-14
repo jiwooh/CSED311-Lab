@@ -36,36 +36,23 @@ module BTB (
 
     assign taken = (branch & alu_bcond) | is_jal | is_jalr;
 
-    // to fix UNOPTFLAT error
-    reg [4:0] BHSR_tmp;
-    assign BHSR = (BHSR_tmp << 1) + {4'b0, taken};
-
     reg [31:0] dest; // temporary wire for convenience
 
-    // 1. initialization
-    initial begin 
-        BHSR_tmp = BHSR;
-    end
     always @(posedge clk) begin
         if (reset) begin
             for (idx = 0; idx <= 31; idx = idx + 1) begin
                 btb[idx] <= 0; // empty btb
-                tag_table[idx] <= -1; // invalid tag
                 pht[idx] <= 2'b00;
             end
-            pred_pc <= 4;
         end
         else begin
-            // TODO ERROR FIXED? : Blocked and non-blocking assignments to same variable [BHSR]
-            //BHSR_tmp <= 0;
             if (is_jal | branch) begin // destination = pc + imm
                 dest <= pc_plus_imm;
             end else if (is_jalr) begin // destination = reg + imm
                 dest <= reg_plus_imm;
             end
 
-            if (real_pc_tag != tag_table[real_pc_idx] | dest != btb[real_pc_idx]) begin
-                tag_table[real_pc_idx] <= real_pc_tag;
+            if ((is_jal | branch| is_jalr )&&(dest != btb[real_pc_idx])) begin
                 btb[real_pc_idx] <= dest;
             end
             
@@ -87,32 +74,15 @@ module BTB (
                     endcase
                 end
             end
-            if ((query_tag == tag_table[query_idx]) & (pht[query_idx] >= 2'b10)) begin
-                pred_pc <= pc + 4;//btb[query_idx];
-            end else begin
-                pred_pc <= pc + 4;
-            end
         end
     end
 
-    // 2. real pc calculation
-    // always @(*) begin
-    //     tag_table[real_pc_idx] = 0;
-    //     btb[real_pc_idx] = 0;
-    //     dest = 0;
-    // end
-
-    // always @(*) begin
-    //     pht[real_pc_idx] = 0;
-        
-    // end
-
     // 4. finally check "taken?"
-    // always @(*) begin
-    //     if ((query_tag == tag_table[query_idx]) & (pht[query_idx] >= 2'b10)) begin
-    //         pred_pc = btb[query_idx];
-    //     end else begin
-    //         pred_pc = pc + 4;
-    //     end
-    // end
+    always @(*) begin
+        if ( (branch | is_jal | is_jalr) && (pht[query_idx] >= 2'b10)) begin
+            pred_pc = btb[query_idx];
+        end else begin
+            pred_pc = pc + 4;
+        end
+    end
 endmodule
