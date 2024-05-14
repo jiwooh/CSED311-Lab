@@ -53,56 +53,66 @@ module BTB (
                 tag_table[idx] <= -1; // invalid tag
                 pht[idx] <= 2'b00;
             end
+            pred_pc <= 4;
         end
-        // TODO ERROR FIXED? : Blocked and non-blocking assignments to same variable [BHSR]
-        BHSR_tmp <= 0;
-    end
+        else begin
+            // TODO ERROR FIXED? : Blocked and non-blocking assignments to same variable [BHSR]
+            //BHSR_tmp <= 0;
+            if (is_jal | branch) begin // destination = pc + imm
+                dest <= pc_plus_imm;
+            end else if (is_jalr) begin // destination = reg + imm
+                dest <= reg_plus_imm;
+            end
 
-    // 2. real pc calculation
-    always @(*) begin
-        tag_table[real_pc_idx] = 0;
-        btb[real_pc_idx] = 0;
-        dest = 0;
-        if (is_jal | branch) begin // destination = pc + imm
-            dest = pc_plus_imm;
-        end else if (is_jalr) begin // destination = reg + imm
-            dest = reg_plus_imm;
-        end
-
-        if (real_pc_tag != tag_table[real_pc_idx] | dest != btb[real_pc_idx]) begin
-            tag_table[real_pc_idx] = real_pc_tag;
-            btb[real_pc_idx] = dest;
-        end
-    end
-
-    // 3. pht : 2-bit prediction
-    always @(*) begin
-        pht[real_pc_idx] = 0;
-        if (branch | is_jal | is_jalr) begin 
-            if (taken) begin
-                case (pht[real_pc_idx])
-                    2'b00: pht[real_pc_idx] = 2'b01;
-                    2'b01: pht[real_pc_idx] = 2'b10;
-                    2'b10: pht[real_pc_idx] = 2'b11;
-                    2'b11: pht[real_pc_idx] = 2'b11;
-                endcase
-            end else begin // not taken
-                case (pht[real_pc_idx])
-                    2'b00: pht[real_pc_idx] = 2'b00;
-                    2'b01: pht[real_pc_idx] = 2'b00;
-                    2'b10: pht[real_pc_idx] = 2'b01;
-                    2'b11: pht[real_pc_idx] = 2'b10;
-                endcase
+            if (real_pc_tag != tag_table[real_pc_idx] | dest != btb[real_pc_idx]) begin
+                tag_table[real_pc_idx] <= real_pc_tag;
+                btb[real_pc_idx] <= dest;
+            end
+            
+            // 3. pht : 2-bit prediction
+            if (branch | is_jal | is_jalr) begin 
+                if (taken) begin
+                    case (pht[real_pc_idx])
+                        2'b00: pht[real_pc_idx] <= 2'b01;
+                        2'b01: pht[real_pc_idx] <= 2'b10;
+                        2'b10: pht[real_pc_idx] <= 2'b11;
+                        2'b11: pht[real_pc_idx] <= 2'b11;
+                    endcase
+                end else begin // not taken
+                    case (pht[real_pc_idx])
+                        2'b00: pht[real_pc_idx] <= 2'b00;
+                        2'b01: pht[real_pc_idx] <= 2'b00;
+                        2'b10: pht[real_pc_idx] <= 2'b01;
+                        2'b11: pht[real_pc_idx] <= 2'b10;
+                    endcase
+                end
+            end
+            if ((query_tag == tag_table[query_idx]) & (pht[query_idx] >= 2'b10)) begin
+                pred_pc <= pc + 4;//btb[query_idx];
+            end else begin
+                pred_pc <= pc + 4;
             end
         end
     end
 
+    // 2. real pc calculation
+    // always @(*) begin
+    //     tag_table[real_pc_idx] = 0;
+    //     btb[real_pc_idx] = 0;
+    //     dest = 0;
+    // end
+
+    // always @(*) begin
+    //     pht[real_pc_idx] = 0;
+        
+    // end
+
     // 4. finally check "taken?"
-    always @(*) begin
-        // if ((query_tag == tag_table[query_idx]) & (pht[query_idx] >= 2'b10)) begin
-        //     pred_pc = btb[query_idx];
-        // end else begin
-            pred_pc = pc + 4;
-        // end
-    end
+    // always @(*) begin
+    //     if ((query_tag == tag_table[query_idx]) & (pht[query_idx] >= 2'b10)) begin
+    //         pred_pc = btb[query_idx];
+    //     end else begin
+    //         pred_pc = pc + 4;
+    //     end
+    // end
 endmodule
