@@ -99,10 +99,10 @@ module BTB (
 
     // 4. finally check "taken?"
     always @(*) begin
-        if ((query_tag == tag_table[query_idx]) & (pht[query_idx] >= 2'b10)) begin
-            pred_pc = btb[query_idx];
-        end else begin
+        // if ((query_tag == tag_table[query_idx]) & (pht[query_idx] >= 2'b10)) begin
+        //     pred_pc = btb[query_idx];
+        // end else begin
             pred_pc = pc + 4;
-        end
+        // end
     end
 endmodule
