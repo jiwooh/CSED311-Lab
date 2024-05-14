@@ -11,7 +11,7 @@ module BTB (
     input is_jal,
     input is_jalr,
     output reg [31:0] pred_pc,
-    output reg [4:0] BHSR   // TODO QUESTION : why 5 bits ?????????????
+    output reg [4:0] BHSR
 );
 
     // tag table + btb + pht

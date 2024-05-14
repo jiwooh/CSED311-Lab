@@ -31,8 +31,8 @@ int main(int argc, char** argv, char** env) {
     // string filename = "./student_tb/answer_basic.txt";
     // string filename = "./student_tb/answer_ifelse.txt";
     // string filename = "./student_tb/answer_non-controlflow.txt"; //pass
-    // string filename = "./student_tb/answer_loop.txt";//TODO: fail
-    string filename = "./student_tb/answer_recursive.txt"; //TODO: fail
+    string filename = "./student_tb/answer_loop.txt";//TODO: fail
+    // string filename = "./student_tb/answer_recursive.txt"; //TODO: fail
     ifstream file(filename);
     stringstream ss;
     string reg_hex;
