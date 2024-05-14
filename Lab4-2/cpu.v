@@ -170,7 +170,7 @@ module cpu(input reset,       // positive reset signal
     PC pc(
         .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
         .clk(clk),         // input
-        .pc_write(!is_hazard), // do not write pc if hazard
+        .pc_write((!(is_hazard&&!is_flush))), // do not write pc if hazard
         .next_pc(twomux8Output),     // input
         .current_pc(pcOutput)   // output
     );
@@ -370,8 +370,9 @@ module cpu(input reset,       // positive reset signal
     // rs2 forwarding mux
     threemux threemux2(
         .x0(ID_EX_rs2_data),
-        .x1(EX_MEM_pc_to_reg ? EX_MEM_current_pc + 4 : EX_MEM_alu_out),
-        .x2(MEM_WB_pc_to_reg ? MEM_WB_current_pc + 4 : twomux5Output),
+        .x1(EX_MEM_pc_to_reg ? EX_MEM_current_pc + 4 : 
+            (EX_MEM_mem_to_reg? dmemOutput: EX_MEM_alu_out)),
+        .x2(write_data),
         .sel(forwardB),
         .y(alu_in_2_forwarded)
     );
@@ -458,7 +459,7 @@ module cpu(input reset,       // positive reset signal
 
     // Update MEM/WB pipeline registers here
     always @(posedge clk) begin
-        if (reset | is_flush) begin//EX_MEM_is_flush) begin
+        if (reset) begin //| is_flush) begin//EX_MEM_is_flush) begin
             MEM_WB_mem_to_reg <= 0;
             MEM_WB_reg_write <= 0;
             MEM_WB_mem_to_reg_src_1 <= 0;
@@ -508,7 +509,7 @@ module cpu(input reset,       // positive reset signal
         .y(twomux8Output)
     );
 
-    // calc correct pc
+    //calc correct pc
     always @(*) begin
         is_miss=0;
         if ((EX_MEM_branch && EX_MEM_alu_bcond) || EX_MEM_is_jal) begin
@@ -523,6 +524,21 @@ module cpu(input reset,       // positive reset signal
             correct_pc = EX_MEM_current_pc + 4;
         end
     end
+    //calc correct pc
+    // always @(*) begin
+    //     is_miss=0;
+    //     if ((ID_EX_branch & ALU_bcond) | ID_EX_is_jal) begin
+    //         correct_pc = ID_EX_current_pc + ID_EX_imm; // pc + imm
+    //         is_miss = pred_pc != correct_pc;
+    //     end
+    //     else if (ID_EX_is_jalr) begin
+    //         correct_pc = ALUOutput; // reg + imm
+    //         is_miss = pred_pc != correct_pc;
+    //     end
+    //     else begin
+    //         correct_pc = ID_EX_current_pc + 4;
+    //     end
+    // end
 
     // ---------- Other UNUSED Modules ----------
     

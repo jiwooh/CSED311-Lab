@@ -20,7 +20,13 @@ module ForwardingUnit(input [6:0] opcode,
 
 always @(*) begin
     // rs1 Forwarding
-    if (opcode == `ARITHMETIC || opcode == `ARITHMETIC_IMM || opcode == `LOAD || opcode == `STORE) begin
+    if (opcode == `ARITHMETIC 
+        || opcode == `ARITHMETIC_IMM 
+        || opcode == `LOAD 
+        || opcode == `STORE
+        || opcode == `JAL 
+        || opcode == `JALR 
+        || opcode == `BRANCH) begin
         if (rs1 == dist1_rd && dist1_rd != 0 && dist1_reg_write) begin
             forwardA = 2'b01; // Distance 1 Forwarding
         end else if (rs1 == dist2_rd && dist2_rd != 0 && dist2_reg_write) begin
@@ -33,8 +39,11 @@ always @(*) begin
     end
 
     // rs2 Forwarding
-    if (opcode == `ARITHMETIC || opcode == `LOAD || opcode == `STORE) begin
-        if (rs2     == dist1_rd && dist1_rd != 0 && dist1_reg_write) begin
+    if (opcode == `ARITHMETIC 
+        || opcode == `LOAD 
+        || opcode == `BRANCH
+        || opcode == `STORE) begin
+        if (rs2 == dist1_rd && dist1_rd != 0 && dist1_reg_write) begin
             forwardB = 2'b01; // Distance 1 Forwarding
         end else if (rs2 == dist2_rd && dist2_rd != 0 && dist2_reg_write) begin
             forwardB = 2'b10; // Distance 2 Forwarding
