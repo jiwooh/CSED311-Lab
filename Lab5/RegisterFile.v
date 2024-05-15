@@ -17,11 +17,11 @@ module RegisterFile(input	reset,
   assign rs2_dout = rf[rs2];
 
   always @(clk) begin
-    if (clk==0) begin // negative edge
+    if (clk==0) begin
       if (write_enable & (rd != 0))
         rf[rd] <= rd_din;
     end
-    else begin // positive edge
+    else begin
       if (reset) begin
         rf[0] <= 32'b0;
         rf[1] <= 32'b0;
