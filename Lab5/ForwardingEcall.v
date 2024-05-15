@@ -11,21 +11,22 @@ module ForwardingEcall (input [4:0] rs1,
                         output reg [31:0] rs2_dout_forwarded);
 
     always @(*) begin
-        if((rs1 == rd) && (rd != 0)) begin
-            rs1_dout_forwarded = rd_din;
-        end
-        else if((EX_MEM_rd == 5'd17) && is_ecall) begin
+        // if((rs1 == rd) && (rd != 0)) begin
+        //     rs1_dout_forwarded = rd_din;
+        // end
+        // else if((EX_MEM_rd == 5'd17) && is_ecall) begin
+        if((EX_MEM_rd == 5'd17) && is_ecall) begin
             rs1_dout_forwarded = EX_MEM_alu_out;
         end
         else begin
             rs1_dout_forwarded = rs1_dout;
         end
 
-        if((rs2 == rd) && (rd != 0)) begin
-            rs2_dout_forwarded = rd_din;
-        end
-        else begin
+        // if((rs2 == rd) && (rd != 0)) begin
+        //     rs2_dout_forwarded = rd_din;
+        // end
+        // else begin
             rs2_dout_forwarded = rs2_dout;
-        end
+        // end
     end
 endmodule

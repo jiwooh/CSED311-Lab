@@ -24,7 +24,7 @@ always @(*) begin
         || opcode == `ARITHMETIC_IMM 
         || opcode == `LOAD 
         || opcode == `STORE
-        || opcode == `JAL 
+        //|| opcode == `JAL 
         || opcode == `JALR 
         || opcode == `BRANCH) begin
         if (rs1 == dist1_rd && dist1_rd != 0 && dist1_reg_write) begin
@@ -40,7 +40,7 @@ always @(*) begin
 
     // rs2 Forwarding
     if (opcode == `ARITHMETIC 
-        || opcode == `LOAD 
+        //|| opcode == `LOAD 
         || opcode == `BRANCH
         || opcode == `STORE) begin
         if (rs2 == dist1_rd && dist1_rd != 0 && dist1_reg_write) begin
