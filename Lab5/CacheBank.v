@@ -1,24 +1,30 @@
-module Cache #(parameter LINE_SIZE = 16,
+module CacheBank #(parameter LINE_SIZE = 16,
                parameter NUM_SETS = /* Your choice */
-               parameter NUM_WAYS = /* Your choice */) (
+               parameter NUM_WAYS = 2) (
     input reset,
     input clk,
 
-    input is_input_valid,
     input [31:0] addr,
-    input mem_read,
-    input mem_write,
-    input [31:0] din,
 
-    output is_ready,
-    output is_output_valid,
-    output [31:0] dout,
+    output tag,
+    output valid,
+    output [1:0]data,
     output is_hit);
   // Wire declarations
   wire is_data_mem_ready;
   // Reg declarations
   // You might need registers to keep the status.
-
+  
+  // C = 256 -> logC = 10
+  // a = 2 
+  // B = 16 -> block offset = log(B/G) = 2 bit
+  // G = 4 -> 2 bit [1:0]
+  // C/a/B = 8 -> set index= 3 bit
+  wire set_index;
+  wire block_offset;
+  assign set_index = addr[6:4];
+  assign block_offset = addr[3:2];
+  // byte offset : [1:0]
   // Instantiate data memory
   DataMemory #(.BLOCK_SIZE(LINE_SIZE)) data_mem(
     .reset(reset),

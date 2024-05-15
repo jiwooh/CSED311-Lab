@@ -80,6 +80,12 @@ module cpu(input reset,       // positive reset signal
     wire [4:0] BHSR;
     reg [31:0] correct_pc;
 
+    // 5
+    // Cache
+    reg cache_is_output_valid;
+    reg cache_is_ready;
+    reg cache_is_hit;
+
     /***** Register declarations *****/
     // TODO You need to modify the width of registers
     // In addition, 
@@ -313,15 +319,30 @@ module cpu(input reset,       // positive reset signal
     );
 
     // ---------- Data Memory ----------
-    DataMemory dmem(
-        .reset (reset),      // input
-        .clk (clk),        // input
-        .addr (EX_MEM_alu_out),       // input
-        .din (EX_MEM_dmem_data),        // input
-        .mem_read (EX_MEM_mem_read),   // input
-        .mem_write (EX_MEM_mem_write),  // input
-        .dout (dmemOutput)        // output
-    );
+    // DataMemory dmem(
+    //     .reset (reset),      // input
+    //     .clk (clk),        // input
+    //     .addr (EX_MEM_alu_out),       // input
+    //     .din (EX_MEM_dmem_data),        // input
+    //     .mem_read (EX_MEM_mem_read),   // input
+    //     .mem_write (EX_MEM_mem_write),  // input
+    //     .dout (dmemOutput)        // output
+    // );
+    Cache cache(
+        //input
+        .reset (reset),
+        .clk (clk), 
+        .is_input_valid (EX_MEM_mem_read | EX_MEM_mem_write),
+        .addr(EX_MEM_alu_out),
+        .mem_rw(EX_MEM_mem_read && !EX_MEM_mem_write ? 0:
+                (!EX_MEM_mem_read && EX_MEM_mem_write ? 1:0)),
+        .din(EX_MEM_dmem_data),
+        //output
+        .is_ready(cache_is_ready),
+        .is_output_valid(cache_is_output_valid),
+        .dout(dmemOutput),
+        .is_hit(cache_is_hit)
+    )
 
     
     // ---------- BTB ----------
