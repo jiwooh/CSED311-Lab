@@ -59,6 +59,7 @@ module cpu(input reset,       // positive reset signal
     wire [31:0] twomux8Output;
     wire _is_halted;
     wire is_x17_10;
+    wire detection_is_hazard;
     wire is_hazard;
 
     // forwarding unit
@@ -153,6 +154,7 @@ module cpu(input reset,       // positive reset signal
     assign _is_halted = is_ecall & is_x17_10;
     assign is_halted = MEM_WB_is_halted;
     assign is_flush = is_miss;
+    assign is_hazard = detection_is_hazard | !cache_is_ready;
 
     // ---------- Update program counter ----------
     // PC must be updated on the rising edge (positive edge) of the clock.
@@ -181,7 +183,7 @@ module cpu(input reset,       // positive reset signal
         .EX_MEM_rd(EX_MEM_rd),
         .EX_MEM_reg_write(EX_MEM_reg_write),
         .is_ecall(is_ecall),
-        .is_hazard(is_hazard)
+        .is_hazard(detection_is_hazard)
     );
 
     // ecall mux
@@ -318,8 +320,8 @@ module cpu(input reset,       // positive reset signal
         .alu_bcond(ALU_bcond)//,  // output
     );
 
-    // ---------- Data Memory ----------
-    // DataMemory dmem(
+    //---------- Data Memory ----------
+    // DataMemory_old dmem(
     //     .reset (reset),      // input
     //     .clk (clk),        // input
     //     .addr (EX_MEM_alu_out),       // input
@@ -342,7 +344,7 @@ module cpu(input reset,       // positive reset signal
         .is_output_valid(cache_is_output_valid),
         .dout(dmemOutput),
         .is_hit(cache_is_hit)
-    )
+    );
 
     
     // ---------- BTB ----------
@@ -508,6 +510,12 @@ module cpu(input reset,       // positive reset signal
             EX_MEM_current_pc <= ID_EX_current_pc;
             EX_MEM_pred_pc <= ID_EX_pred_pc;
             EX_MEM_imm <= ID_EX_imm;
+        end
+        if (!cache_is_ready) begin
+            EX_MEM_reg_write <= 0;
+            EX_MEM_mem_write <= 0;
+            EX_MEM_mem_read <= 0;
+            EX_MEM_rd <= 5'b0;
         end
     end
 
