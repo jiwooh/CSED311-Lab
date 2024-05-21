@@ -330,6 +330,7 @@ module cpu(input reset,       // positive reset signal
     //     .mem_write (EX_MEM_mem_write),  // input
     //     .dout (dmemOutput)        // output
     // );
+    
     Cache cache(
         //input
         .reset (reset),
@@ -386,23 +387,6 @@ module cpu(input reset,       // positive reset signal
             correct_pc = EX_MEM_current_pc + 4;
         end
     end
-    //calc correct pc
-    // always @(*) begin
-    //     is_miss=0;
-    //     if ((ID_EX_branch & ALU_bcond) | ID_EX_is_jal) begin
-    //         correct_pc = ID_EX_current_pc + ID_EX_imm; // pc + imm
-    //         is_miss = pred_pc != correct_pc;
-    //     end
-    //     else if (ID_EX_is_jalr) begin
-    //         correct_pc = ALUOutput; // reg + imm
-    //         is_miss = pred_pc != correct_pc;
-    //     end
-    //     else begin
-    //         correct_pc = ID_EX_current_pc + 4;
-    //     end
-    // end
-
-    
 
     // Update IF/ID pipeline registers here
     always @(posedge clk) begin
