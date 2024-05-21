@@ -38,11 +38,14 @@ module Cache #(parameter LINE_SIZE = 16//,
   wire bank_dmem_read_2;
   wire bank_dmem_write_1;
   wire bank_dmem_write_2;
+  wire bank_select_1;
+  wire bank_select_2;
   // Reg declarations
   // You might need registers to keep the status.
   assign is_ready = is_data_mem_ready;
   assign is_hit = bank_is_hit_1 || bank_is_hit_2;
-  assign dout = bank_output_line_1;
+  assign dout = bank_select_1? bank_output_line_1:
+                (bank_select_2? bank_output_line_2:0);
 
   CacheBank bank1 (
     .reset(reset),
@@ -59,6 +62,7 @@ module Cache #(parameter LINE_SIZE = 16//,
     .data_is_dirty(bank_data_is_dirty_1),
     .dmem_read(bank_dmem_read_1),
     .dmem_write(bank_dmem_write_1),
+    .is_selected(bank_select_1),
     .is_hit(bank_is_hit_1)
   );
   CacheBank bank2 (
@@ -76,6 +80,7 @@ module Cache #(parameter LINE_SIZE = 16//,
     .data_is_dirty(bank_data_is_dirty_2),
     .dmem_read(bank_dmem_read_2),
     .dmem_write(bank_dmem_write_2),
+    .is_selected(bank_select_2),
     .is_hit(bank_is_hit_2)
   );
 
