@@ -30,14 +30,18 @@ module Cache #(parameter LINE_SIZE = 16//,
   wire [31:0] bank_output_line_2;
   wire bank_is_hit_1;
   wire bank_is_hit_2;
-  wire bank_data_replace_request_1;
-  wire bank_data_replace_request_2;
+  wire bank_data_replaced_1;
+  wire bank_data_replaced_2;
   wire bank_data_is_dirty_1;
   wire bank_data_is_dirty_2;
+  wire bank_dmem_read_1;
+  wire bank_dmem_read_2;
+  wire bank_dmem_write_1;
+  wire bank_dmem_write_2;
   // Reg declarations
   // You might need registers to keep the status.
   assign is_ready = is_data_mem_ready;
-  assign is_hit = bank_is_hit_1;
+  assign is_hit = bank_is_hit_1 || bank_is_hit_2;
   assign dout = bank_output_line_1;
 
   CacheBank bank1 (
@@ -51,8 +55,10 @@ module Cache #(parameter LINE_SIZE = 16//,
     .input_line(din), //32 bit
     .output_set(bank_output_set_1), //128 bit
     .output_line(bank_output_line_1), // 32 bit
-    .data_replace_request(bank_data_replace_request_1), // 32 bit
-    .data_is_dirty(bank_data_is_dirty_1), // 32 bit
+    .data_replaced(bank_data_replaced_1),
+    .data_is_dirty(bank_data_is_dirty_1),
+    .dmem_read(bank_dmem_read_1),
+    .dmem_write(bank_dmem_write_1),
     .is_hit(bank_is_hit_1)
   );
   CacheBank bank2 (
@@ -66,8 +72,10 @@ module Cache #(parameter LINE_SIZE = 16//,
     .input_line(din), //32 bit
     .output_set(bank_output_set_2), //128 bit
     .output_line(bank_output_line_2), // 32 bit
-    .data_replace_request(bank_data_replace_request_2), // 32 bit
-    .data_is_dirty(bank_data_is_dirty_2), // 32 bit
+    .data_replaced(bank_data_replaced_2),
+    .data_is_dirty(bank_data_is_dirty_2),
+    .dmem_read(bank_dmem_read_2),
+    .dmem_write(bank_dmem_write_2),
     .is_hit(bank_is_hit_2)
   );
 
@@ -86,10 +94,10 @@ module Cache #(parameter LINE_SIZE = 16//,
         /* verilator lint_on BLKSEQ */
       end
     end
-    if(bank_data_replace_request_1 && !bank_data_replace_request_2) begin
+    if(bank_data_replaced_1 && !bank_data_replaced_2) begin
       bank_older_one[addr[6:4]]<=1;
     end
-    else if(!bank_data_replace_request_1 && bank_data_replace_request_2) begin
+    else if(!bank_data_replaced_1 && bank_data_replaced_2) begin
       bank_older_one[addr[6:4]]<=0;
     end
   end
@@ -101,8 +109,8 @@ module Cache #(parameter LINE_SIZE = 16//,
 
     .is_input_valid((!bank_is_hit_1 || !bank_is_hit_2) && is_input_valid),
     .addr((addr>>(`CLOG2(LINE_SIZE)))),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
-    .mem_read(mem_rw == 0),
-    .mem_write(mem_rw == 1),
+    .mem_read(bank_dmem_read_1^bank_dmem_read_2),
+    .mem_write(bank_dmem_write_1^bank_dmem_write_2),
     .din(bank_output_set),
 
     // is output from the data memory valid?
