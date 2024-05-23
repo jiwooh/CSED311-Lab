@@ -74,15 +74,15 @@ module CacheBank (
       end
     end
 
-    if (mem_rw == 1) begin//write
-      if (is_hit) begin //write hit -> write-allocate
+    if (mem_rw == 1) begin // write
+      if (is_hit) begin // write hit -> write-allocate
         dmem_read <= 0;
       end
       else begin // write miss -> write-back
         if (bank_is_old[set_index]) begin
           dmem_read <= 1;
-          //request data
-          //data_replaced <=1; 
+          // request data
+          // data_replaced <=1; 
           if (dirty_bank[set_index] == 1) begin //replace
             output_set <= data_bank[set_index];
             data_is_dirty <= 1;
@@ -117,14 +117,14 @@ module CacheBank (
         end
       endcase
     end else begin // read
-      if (is_hit) begin //read hit 
+      if (is_hit) begin // read hit 
         dmem_read <= 0;
       end
       else begin // read miss
         if (bank_is_old[set_index]) begin
           dmem_read <= 1;
-          //request data
-          //data_replaced <=1;
+          // request data
+          // data_replaced <=1;
           if (data_ready) begin
             if (dirty_bank[set_index] == 1) begin //replace
               output_set <= data_bank[set_index];

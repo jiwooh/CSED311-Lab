@@ -2,7 +2,8 @@
 
 module Cache #(parameter LINE_SIZE = 16//,
                //parameter NUM_SETS = 8,
-               ) ( //parameter NUM_WAYS = 2) (
+               //parameter NUM_WAYS = 2
+              ) (
     input reset,
     input clk,
 
@@ -15,6 +16,7 @@ module Cache #(parameter LINE_SIZE = 16//,
     output is_output_valid,
     output [31:0] dout,
     output is_hit);
+
   // Wire declarations
   wire is_data_mem_ready;
   wire bank_index;
@@ -44,8 +46,8 @@ module Cache #(parameter LINE_SIZE = 16//,
   // You might need registers to keep the status.
   assign is_ready = is_data_mem_ready;
   assign is_hit = bank_is_hit_1 || bank_is_hit_2;
-  assign dout = bank_select_1? bank_output_line_1:
-                (bank_select_2? bank_output_line_2:0);
+  assign dout = bank_select_1 ? bank_output_line_1 :
+               (bank_select_2 ? bank_output_line_2 : 0);
 
   CacheBank bank1 (
     .reset(reset),
@@ -85,10 +87,10 @@ module Cache #(parameter LINE_SIZE = 16//,
   );
 
 
-  //bank control
-  assign bank_output_set = 
-    bank_data_is_dirty_1 ?
-     (bank_data_is_dirty_2? 0:bank_output_set_1):(bank_data_is_dirty_2? bank_output_set_2:0);
+  // bank control
+  assign bank_output_set = bank_data_is_dirty_1 ?
+                          (bank_data_is_dirty_2 ? 0 : bank_output_set_1) : 
+                          (bank_data_is_dirty_2 ? bank_output_set_2 : 0);
   integer i;
   always @(posedge clk) begin
     // Initialize data memory
@@ -99,10 +101,10 @@ module Cache #(parameter LINE_SIZE = 16//,
         /* verilator lint_on BLKSEQ */
       end
     end
-    if(bank_data_replaced_1 && !bank_data_replaced_2) begin
+    if (bank_data_replaced_1 && !bank_data_replaced_2) begin
       bank_older_one[addr[6:4]] <= 1;
     end
-    else if(!bank_data_replaced_1 && bank_data_replaced_2) begin
+    else if (!bank_data_replaced_1 && bank_data_replaced_2) begin
       bank_older_one[addr[6:4]] <= 0;
     end
   end
