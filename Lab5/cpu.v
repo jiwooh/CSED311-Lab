@@ -337,8 +337,8 @@ module cpu(input reset,       // positive reset signal
         .clk (clk), 
         .is_input_valid (EX_MEM_mem_read | EX_MEM_mem_write),
         .addr(EX_MEM_alu_out),
-        .mem_rw(EX_MEM_mem_read && !EX_MEM_mem_write ? 0:
-                (!EX_MEM_mem_read && EX_MEM_mem_write ? 1:0)),
+        .mem_rw(EX_MEM_mem_read && !EX_MEM_mem_write ? 0 :
+              (!EX_MEM_mem_read &&  EX_MEM_mem_write ? 1 : 0)),
         .din(EX_MEM_dmem_data),
         //output
         .is_ready(cache_is_ready),

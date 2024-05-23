@@ -75,28 +75,28 @@ module CacheBank (
     end
 
     if (mem_rw == 1) begin//write
-      if(is_hit) begin //write hit -> write-allocate
+      if (is_hit) begin //write hit -> write-allocate
         dmem_read <= 0;
       end
       else begin // write miss -> write-back
-        if(bank_is_old[set_index]) begin
+        if (bank_is_old[set_index]) begin
           dmem_read <= 1;
           //request data
           //data_replaced <=1; 
-          if(dirty_bank[set_index]==1) begin //replace
+          if (dirty_bank[set_index] == 1) begin //replace
             output_set <= data_bank[set_index];
             data_is_dirty <= 1;
-            dmem_write<=1;
+            dmem_write <= 1;
           end
           else data_is_dirty <= 0;
-          if(data_ready) begin
+          if (data_ready) begin
             // get data from mem
             data_bank[set_index] <= input_set;
             tag_bank[set_index] <= inst_tag;
             valid_bank[set_index] <= 1;
             dirty_bank[set_index] <= 0;
-            data_replaced <=1;
-            dmem_write<=0;
+            data_replaced <= 1;
+            dmem_write <= 0;
           end
         end
       end
@@ -117,16 +117,16 @@ module CacheBank (
         end
       endcase
     end else begin // read
-      if(is_hit) begin //read hit 
+      if (is_hit) begin //read hit 
         dmem_read <= 0;
       end
       else begin // read miss
-        if(bank_is_old[set_index]) begin
+        if (bank_is_old[set_index]) begin
           dmem_read <= 1;
           //request data
           //data_replaced <=1;
-          if(data_ready) begin
-            if(dirty_bank[set_index]==1) begin //replace
+          if (data_ready) begin
+            if (dirty_bank[set_index] == 1) begin //replace
               output_set <= data_bank[set_index];
               data_is_dirty <= 1;
               dmem_write <= 1;
@@ -137,8 +137,8 @@ module CacheBank (
             tag_bank[set_index] <= inst_tag;
             valid_bank[set_index] <= 1;
             dirty_bank[set_index] <= 0;
-            data_replaced <=1;
-            dmem_write<=0;
+            data_replaced <= 1;
+            dmem_write <= 0;
           end
         end
       end

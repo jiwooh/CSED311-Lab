@@ -100,10 +100,10 @@ module Cache #(parameter LINE_SIZE = 16//,
       end
     end
     if(bank_data_replaced_1 && !bank_data_replaced_2) begin
-      bank_older_one[addr[6:4]]<=1;
+      bank_older_one[addr[6:4]] <= 1;
     end
     else if(!bank_data_replaced_1 && bank_data_replaced_2) begin
-      bank_older_one[addr[6:4]]<=0;
+      bank_older_one[addr[6:4]] <= 0;
     end
   end
 
@@ -114,8 +114,8 @@ module Cache #(parameter LINE_SIZE = 16//,
 
     .is_input_valid((!bank_is_hit_1 || !bank_is_hit_2) && is_input_valid),
     .addr((addr>>(`CLOG2(LINE_SIZE)))),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
-    .mem_read(bank_dmem_read_1^bank_dmem_read_2),
-    .mem_write(bank_dmem_write_1^bank_dmem_write_2),
+    .mem_read(bank_dmem_read_1 ^ bank_dmem_read_2),
+    .mem_write(bank_dmem_write_1 ^ bank_dmem_write_2),
     .din(bank_output_set),
 
     // is output from the data memory valid?
