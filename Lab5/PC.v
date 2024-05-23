@@ -4,6 +4,7 @@ module PC(
     input clk,
     input pc_write,
     input [31:0] next_pc,
+    input cache_stall,
     output reg [31:0] current_pc
 );
   
@@ -12,7 +13,7 @@ module PC(
         if (reset) begin
             current_pc <= 0;
         end
-        else if (pc_write) begin
+        else if (pc_write & !cache_stall) begin
             current_pc <= next_pc;
         end else begin // data hazard
             current_pc <= current_pc;

@@ -83,9 +83,11 @@ module cpu(input reset,       // positive reset signal
 
     // 5
     // Cache
+    reg cache_is_input_valid;
     reg cache_is_output_valid;
     reg cache_is_ready;
     reg cache_is_hit;
+    reg cache_stall;
 
     /***** Register declarations *****/
     // TODO You need to modify the width of registers
@@ -152,17 +154,20 @@ module cpu(input reset,       // positive reset signal
     assign rs2 = IF_ID_inst[24:20];
     assign is_x17_10 = (rs1_dout_forwarded == 10) & (rs1 == 17);
     assign _is_halted = is_ecall & is_x17_10;
-    assign is_halted = MEM_WB_is_halted;
+    assign is_halted = !cache_stall ? MEM_WB_is_halted : 0;
     assign is_flush = is_miss;
     assign is_hazard = detection_is_hazard | !cache_is_ready;
+    assign cache_is_input_valid = EX_MEM_mem_read | EX_MEM_mem_write;
+    assign cache_stall = cache_is_input_valid && !(cache_is_ready && cache_is_hit && cache_is_output_valid);
 
     // ---------- Update program counter ----------
     // PC must be updated on the rising edge (positive edge) of the clock.
     PC pc(
         .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
         .clk(clk),         // input
-        .pc_write((!(is_hazard&&!is_flush))), // do not write pc if hazard
+        .pc_write((!(is_hazard && !is_flush))), // do not write pc if hazard
         .next_pc(twomux8Output),     // input
+        .cache_stall(cache_stall),   // input
         .current_pc(current_pc)   // output
     );
 
@@ -335,7 +340,7 @@ module cpu(input reset,       // positive reset signal
         //input
         .reset (reset),
         .clk (clk), 
-        .is_input_valid (EX_MEM_mem_read | EX_MEM_mem_write),
+        .is_input_valid (cache_is_input_valid),
         .addr(EX_MEM_alu_out),
         .mem_rw(EX_MEM_mem_read && !EX_MEM_mem_write ? 0 :
               (!EX_MEM_mem_read &&  EX_MEM_mem_write ? 1 : 0)),
@@ -396,18 +401,17 @@ module cpu(input reset,       // positive reset signal
             IF_ID_BHSR <= 0;
             IF_ID_pred_pc <= 0; 
         end
-        else if (!is_hazard) begin
+        else if (!is_hazard && !cache_stall) begin
             IF_ID_inst <= imm;
             IF_ID_current_pc <= current_pc;
             IF_ID_BHSR <= BHSR;
             IF_ID_pred_pc <= pred_pc;
-            
         end
     end
 
     // Update ID/EX pipeline registers here
     always @(posedge clk) begin
-        if (reset | is_flush) begin
+        if (reset | is_flush | (is_hazard & !cache_stall)) begin
             ID_EX_alu_src <= 0;
             ID_EX_mem_write <= 0;
             ID_EX_mem_read <= 0;
@@ -429,7 +433,7 @@ module cpu(input reset,       // positive reset signal
             ID_EX_pred_pc <= 0;
             ID_EX_BHSR <= 0;
         end
-        else begin
+        else if (!is_hazard) begin
             ID_EX_alu_src <= ALU_src;
             ID_EX_mem_write <= mem_write;
             ID_EX_mem_read <= mem_read;
@@ -477,7 +481,7 @@ module cpu(input reset,       // positive reset signal
             EX_MEM_pc_to_reg <= 0;
             EX_MEM_current_pc <= 0;
         end
-        else begin
+        else if (!cache_stall) begin
             EX_MEM_mem_write <= ID_EX_mem_write;
             EX_MEM_mem_read <= ID_EX_mem_read;
             EX_MEM_mem_to_reg <= ID_EX_mem_to_reg;
@@ -515,7 +519,7 @@ module cpu(input reset,       // positive reset signal
             MEM_WB_pc_to_reg <= 0;
             MEM_WB_current_pc <= 0;
         end
-        else begin
+        else if (!cache_stall) begin
             MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;
             MEM_WB_reg_write <= EX_MEM_reg_write;
             MEM_WB_mem_to_reg_src_1 <= EX_MEM_alu_out;

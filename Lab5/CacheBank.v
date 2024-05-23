@@ -101,7 +101,7 @@ module CacheBank (
         end
       end
       // write-allocate
-      dirty_bank[set_index] <=1;
+      dirty_bank[set_index] <= 1;
       case (block_offset)
         0: begin
           data_bank[set_index][31:0] <= input_line;
