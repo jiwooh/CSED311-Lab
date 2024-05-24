@@ -395,13 +395,13 @@ module cpu(input reset,       // positive reset signal
 
     // Update IF/ID pipeline registers here
     always @(posedge clk) begin
-        if (reset || is_flush) begin
+        if (reset || is_flush | (is_hazard & !cache_stall)) begin
             IF_ID_inst <= 0;
             IF_ID_current_pc <= 0;
             IF_ID_BHSR <= 0;
             IF_ID_pred_pc <= 0; 
         end
-        else if (!is_hazard && !cache_stall) begin
+        else if (!is_hazard) begin
             IF_ID_inst <= imm;
             IF_ID_current_pc <= current_pc;
             IF_ID_BHSR <= BHSR;
