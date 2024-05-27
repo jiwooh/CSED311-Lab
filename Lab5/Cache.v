@@ -35,7 +35,7 @@ module Cache #(parameter LINE_SIZE = 16//,
   wire bank_select_1;
   // Reg declarations
   // You might need registers to keep the status.
-  assign is_ready = is_data_mem_ready;
+  assign is_ready = is_data_mem_ready && (!is_input_valid || (is_input_valid && is_hit));
   assign is_hit = bank_is_hit_1;
   assign dout = bank_output_line_1;
 
