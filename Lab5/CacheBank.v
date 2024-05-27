@@ -7,7 +7,6 @@ module CacheBank (
     input mem_rw,
     input [31:0] addr,
     input data_ready,
-    input [7:0] bank_is_old,
     input [127:0] input_set,
     input [31:0] input_line,
     output reg [127:0] output_set,
@@ -79,25 +78,23 @@ module CacheBank (
         dmem_read <= 0;
       end
       else begin // write miss -> write-allocate
-        if (bank_is_old[set_index]) begin
-          dmem_read <= 1;
-          // request data
-          // data_replaced <=1; 
-          if (dirty_bank[set_index] == 1) begin // replace
-            output_set <= data_bank[set_index];
-            data_is_dirty <= 1;
-            dmem_write <= 1;
-          end
-          else data_is_dirty <= 0;
-          if (data_ready) begin
-            // get data from mem
-            data_bank[set_index] <= input_set;
-            tag_bank[set_index] <= inst_tag;
-            valid_bank[set_index] <= 1;
-            dirty_bank[set_index] <= 0;
-            data_replaced <= 1;
-            dmem_write <= 0;
-          end
+        dmem_read <= 1;
+        // request data
+        // data_replaced <=1; 
+        if (dirty_bank[set_index] == 1) begin // replace
+          output_set <= data_bank[set_index];
+          data_is_dirty <= 1;
+          dmem_write <= 1;
+        end
+        else data_is_dirty <= 0;
+        if (data_ready) begin
+          // get data from mem
+          data_bank[set_index] <= input_set;
+          tag_bank[set_index] <= inst_tag;
+          valid_bank[set_index] <= 1;
+          dirty_bank[set_index] <= 0;
+          data_replaced <= 1;
+          dmem_write <= 0;
         end
       end
       // write-allocate
@@ -121,25 +118,23 @@ module CacheBank (
         dmem_read <= 0;
       end
       else begin // read miss
-        if (bank_is_old[set_index]) begin
-          dmem_read <= 1;
-          // request data
-          // data_replaced <=1;
-          if (data_ready) begin
-            if (dirty_bank[set_index] == 1) begin // replace
-              output_set <= data_bank[set_index];
-              data_is_dirty <= 1;
-              dmem_write <= 1;
-            end
-            else data_is_dirty <= 0;
-            // get data from mem
-            data_bank[set_index] <= input_set;
-            tag_bank[set_index] <= inst_tag;
-            valid_bank[set_index] <= 1;
-            dirty_bank[set_index] <= 0;
-            data_replaced <= 1;
-            dmem_write <= 0;
+        dmem_read <= 1;
+        // request data
+        // data_replaced <=1;
+        if (data_ready) begin
+          if (dirty_bank[set_index] == 1) begin // replace
+            output_set <= data_bank[set_index];
+            data_is_dirty <= 1;
+            dmem_write <= 1;
           end
+          else data_is_dirty <= 0;
+          // get data from mem
+          data_bank[set_index] <= input_set;
+          tag_bank[set_index] <= inst_tag;
+          valid_bank[set_index] <= 1;
+          dirty_bank[set_index] <= 0;
+          data_replaced <= 1;
+          dmem_write <= 0;
         end
       end
     end   
