@@ -41,13 +41,13 @@ module AssociativeBank (
     reg active_bank;
     
     assign set_index = addr[6:4];
-    assign output_set = active_bank? output_set_1:output_set_2;
-    assign output_line = active_bank? output_line_1:output_line_2;
-    assign output_addr = active_bank? output_addr_1:output_addr_2;
-    assign dmem_read = active_bank? dmem_read_1:dmem_read_2;
-    assign dmem_write = active_bank? dmem_write_1:dmem_write_2;
-    assign cache_state = active_bank? cache_state_1:cache_state_2;
-    assign is_hit = active_bank? is_hit_1:is_hit_2;
+    assign output_set = active_bank==0? output_set_1:output_set_2;
+    assign output_line = active_bank==0? output_line_1:output_line_2;
+    assign output_addr = active_bank==0? output_addr_1:output_addr_2;
+    assign dmem_read = active_bank==0? dmem_read_1:dmem_read_2;
+    assign dmem_write = active_bank==0? dmem_write_1:dmem_write_2;
+    assign cache_state = active_bank==0? cache_state_1:cache_state_2;
+    assign is_hit = active_bank==0? is_hit_1:is_hit_2;
 
     CacheBank bank1 (
         .bank_active(active_bank==0),
@@ -69,7 +69,7 @@ module AssociativeBank (
         .is_hit(is_hit_1)
     );
     CacheBank bank2 (
-        .bank_active(active_bank==0),
+        .bank_active(active_bank==1),
         .reset(reset),
         .clk(clk),
         .mem_rw(mem_rw),
