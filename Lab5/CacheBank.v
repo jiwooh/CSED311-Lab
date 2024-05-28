@@ -16,8 +16,6 @@ module CacheBank (
     output reg [127:0] output_set,
     output [31:0] output_line,
     output [31:0] output_addr,
-    output reg data_replaced,
-    output reg data_is_dirty,
     output reg dmem_read,
     output reg dmem_write,
     output reg is_selected,
@@ -32,6 +30,7 @@ module CacheBank (
   // t = 25 bit
   integer i;
 
+  // parse address 
   wire [24:0] inst_tag;
   wire [2:0] set_index;
   wire [1:0] block_offset;
@@ -40,11 +39,13 @@ module CacheBank (
   assign block_offset = addr[3:2];
   // byte offset : [1:0]
 
+  // bank registers
   reg [24:0] tag_bank [7:0];
   reg valid_bank [7:0];
   reg dirty_bank [7:0];
   reg [127:0] data_bank [7:0];
 
+  // bank output
   wire [24:0] tag_out;
   wire valid_out;
   wire dirty_out;
@@ -54,6 +55,7 @@ module CacheBank (
   assign dirty_out = dirty_bank[set_index];
   assign data_out = data_bank[set_index];
 
+  // block parse
   DataMux datamux(
     .x0(data_out[31:0]),
     .x1(data_out[63:32]),
@@ -62,13 +64,13 @@ module CacheBank (
     .sel(block_offset),
     .y(output_line)
   );
+
+  // hit
   assign is_hit = (inst_tag == tag_out) && valid_out;
   
   always @(posedge clk) begin
     // Initialize data memory
     if (reset) begin
-      data_replaced <= 0;
-      data_is_dirty <= 0;
       cache_state<=`CACHE_IDLE;
       for (i = 0; i < 8; i = i + 1) begin
         /* verilator lint_off BLKSEQ */
@@ -91,7 +93,6 @@ module CacheBank (
           cache_state<=`CACHE_WRITE_BACK_REQUEST;
           output_set <= data_bank[set_index];
           output_addr <={tag_out, set_index, 4'b0000};
-          data_is_dirty <= 1;
           dmem_read <= 0; 
           dmem_write <= 1;
         end
@@ -100,7 +101,6 @@ module CacheBank (
           cache_state<=`CACHE_WRITE_ALLOCATE_REQUEST;
           dmem_read <= 1;
           dmem_write <= 0;
-          data_is_dirty <= 0;
         end
         if(data_write_back_complete==1) begin
           dirty_bank[set_index] <= 0;
@@ -113,7 +113,6 @@ module CacheBank (
           tag_bank[set_index] <= inst_tag;
           valid_bank[set_index] <= 1;
           dirty_bank[set_index] <= 0;
-          data_replaced <= 1;
           dmem_write <= 0;
         end
       end

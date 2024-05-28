@@ -324,17 +324,6 @@ module cpu(input reset,       // positive reset signal
         .alu_res(ALUOutput),  // output
         .alu_bcond(ALU_bcond)//,  // output
     );
-
-    //---------- Data Memory ----------
-    // DataMemory_old dmem(
-    //     .reset (reset),      // input
-    //     .clk (clk),        // input
-    //     .addr (EX_MEM_alu_out),       // input
-    //     .din (EX_MEM_dmem_data),        // input
-    //     .mem_read (EX_MEM_mem_read),   // input
-    //     .mem_write (EX_MEM_mem_write),  // input
-    //     .dout (dmemOutput)        // output
-    // );
     
     Cache cache(
         //input
