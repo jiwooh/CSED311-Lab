@@ -38,7 +38,7 @@ module Cache #(parameter LINE_SIZE = 16//,
   wire bank_dmem_write_1;
   wire bank_select_1;
   wire data_write_back_complete;
-  reg [1:0] bank_state_1;
+  wire [1:0] bank_state_1;
   assign is_ready = (bank_state_1==`CACHE_IDLE);
   assign is_hit = bank_is_hit_1;
   assign dout = bank_output_line_1;
