@@ -44,6 +44,16 @@ module Cache #(parameter LINE_SIZE = 16//,
   assign is_ready = (bank_state_1==`CACHE_IDLE);
   assign is_hit = bank_is_hit_1;
   assign dout = bank_output_line_1;
+  assign bank_output_set = bank_output_set_1;
+  assign dmem_addr = 
+    (bank_state_1==`CACHE_WRITE_BACK_REQUEST) 
+    ? bank_write_back_addr_1 : addr;
+  assign data_write_back_complete = 
+    (bank_state_1==`CACHE_WRITE_BACK_REQUEST) 
+    && is_data_mem_ready
+    && counter > 5;
+  
+  
 
   CacheBank bank1 (
     .reset(reset),
@@ -64,12 +74,24 @@ module Cache #(parameter LINE_SIZE = 16//,
     .is_hit(bank_is_hit_1)
   );
 
-  assign bank_output_set = bank_output_set_1;
-  assign dmem_addr = (bank_state_1==`CACHE_WRITE_BACK_REQUEST)?
-                     bank_write_back_addr_1:addr;
-  assign data_write_back_complete = 
-    (bank_state_1==`CACHE_WRITE_BACK_REQUEST) && is_data_mem_ready&&counter>5;
-  
+  // Instantiate data memory
+  DataMemory #(.BLOCK_SIZE(LINE_SIZE)) data_mem(
+    .reset(reset),
+    .clk(clk),
+
+    .is_input_valid(is_input_valid && request_counter<5),
+    .addr((dmem_addr>>(`CLOG2(LINE_SIZE)))),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
+    .mem_read(bank_dmem_read_1),
+    .mem_write(bank_dmem_write_1),
+    .din(bank_output_set),
+
+    // is output from the data memory valid?
+    .is_output_valid(is_output_valid),
+    .dout(dmem_output_set), //128 bit
+    // is data memory ready to accept request?
+    .mem_ready(is_data_mem_ready)
+  );
+
   always @(posedge clk) begin
       // Initialize data memory
       if (reset) begin
@@ -91,22 +113,4 @@ module Cache #(parameter LINE_SIZE = 16//,
         end
       end
   end
-
-  // Instantiate data memory
-  DataMemory #(.BLOCK_SIZE(LINE_SIZE)) data_mem(
-    .reset(reset),
-    .clk(clk),
-
-    .is_input_valid(is_input_valid && request_counter<5),
-    .addr((dmem_addr>>(`CLOG2(LINE_SIZE)))),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
-    .mem_read(bank_dmem_read_1),
-    .mem_write(bank_dmem_write_1),
-    .din(bank_output_set),
-
-    // is output from the data memory valid?
-    .is_output_valid(is_output_valid),
-    .dout(dmem_output_set), //128 bit
-    // is data memory ready to accept request?
-    .mem_ready(is_data_mem_ready)
-  );
 endmodule
