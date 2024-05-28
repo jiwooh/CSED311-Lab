@@ -21,9 +21,12 @@ module Cache #(parameter LINE_SIZE = 16//,
   // Reg declarations
   // You might need registers to keep the status.
 
-  // bank re
+  // bank control
+  integer counter;
+  integer request_counter;
+
   wire is_data_mem_ready;
-  wire bank_index;
+  //wire bank_index;
 
 
   wire [127:0] dmem_output_set;
@@ -36,7 +39,6 @@ module Cache #(parameter LINE_SIZE = 16//,
   wire bank_is_hit_1;
   wire bank_dmem_read_1;
   wire bank_dmem_write_1;
-  wire bank_select_1;
   wire data_write_back_complete;
   wire [1:0] bank_state_1;
   assign is_ready = (bank_state_1==`CACHE_IDLE);
@@ -58,14 +60,10 @@ module Cache #(parameter LINE_SIZE = 16//,
     .output_addr(bank_write_back_addr_1), // 32 bit
     .dmem_read(bank_dmem_read_1),
     .dmem_write(bank_dmem_write_1),
-    .is_selected(bank_select_1),
     .cache_state(bank_state_1),
     .is_hit(bank_is_hit_1)
   );
 
-  // bank control
-  integer counter;
-  integer request_counter;
   assign bank_output_set = bank_output_set_1;
   assign dmem_addr = (bank_state_1==`CACHE_WRITE_BACK_REQUEST)?
                      bank_write_back_addr_1:addr;
@@ -78,17 +76,19 @@ module Cache #(parameter LINE_SIZE = 16//,
         counter <= 0;
         request_counter <= 0;
       end
-      if(bank_state_1==`CACHE_WRITE_BACK_REQUEST&& is_input_valid) begin
-        counter <= counter + 1;
-        request_counter <= request_counter+1;
-      end 
-      else if(bank_state_1==`CACHE_WRITE_ALLOCATE_REQUEST&& is_input_valid) begin
-        counter <=0;
-        request_counter <= request_counter+1;
-      end
       else begin
-        counter <=0;
-        request_counter <= 0;
+        if(bank_state_1==`CACHE_WRITE_BACK_REQUEST&& is_input_valid) begin
+          counter <= counter + 1;
+          request_counter <= request_counter+1;
+        end 
+        else if(bank_state_1==`CACHE_WRITE_ALLOCATE_REQUEST&& is_input_valid) begin
+          counter <=0;
+          request_counter <= request_counter+1;
+        end
+        else begin
+          counter <=0;
+          request_counter <= 0;
+        end
       end
   end
 

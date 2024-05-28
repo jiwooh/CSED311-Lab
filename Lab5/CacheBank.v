@@ -18,7 +18,6 @@ module CacheBank (
     output [31:0] output_addr,
     output reg dmem_read,
     output reg dmem_write,
-    output reg is_selected,
     output reg [1:0] cache_state,
     output is_hit);
   // Wire declarations
@@ -81,60 +80,62 @@ module CacheBank (
         /* verilator lint_on BLKSEQ */
       end
     end
-    if(is_input_valid) begin
-      if (is_hit) begin // hit
-        cache_state<=`CACHE_IDLE;
-        dmem_read <= 0;
-        dmem_write <= 0;
-      end
-      else begin 
-        if (dirty_bank[set_index] == 1) begin
-          // write-back
-          cache_state<=`CACHE_WRITE_BACK_REQUEST;
-          output_set <= data_bank[set_index];
-          output_addr <={tag_out, set_index, 4'b0000};
-          dmem_read <= 0; 
-          dmem_write <= 1;
+    else begin
+      if(is_input_valid) begin
+        if (is_hit) begin // hit
+          cache_state<=`CACHE_IDLE;
+          dmem_read <= 0;
+          dmem_write <= 0;
         end
         else begin 
-          // allocate
-          cache_state<=`CACHE_WRITE_ALLOCATE_REQUEST;
-          dmem_read <= 1;
-          dmem_write <= 0;
+          if (dirty_bank[set_index] == 1) begin
+            // write-back
+            cache_state<=`CACHE_WRITE_BACK_REQUEST;
+            output_set <= data_bank[set_index];
+            output_addr <={tag_out, set_index, 4'b0000};
+            dmem_read <= 0; 
+            dmem_write <= 1;
+          end
+          else begin 
+            // allocate
+            cache_state<=`CACHE_WRITE_ALLOCATE_REQUEST;
+            dmem_read <= 1;
+            dmem_write <= 0;
+          end
+          if(data_write_back_complete==1) begin
+            dirty_bank[set_index] <= 0;
+            cache_state<=`CACHE_IDLE;
+          end
+          if (data_ready) begin
+            // get data from mem
+            cache_state<=`CACHE_DATA_RECIEVED;
+            data_bank[set_index] <= input_set;
+            tag_bank[set_index] <= inst_tag;
+            valid_bank[set_index] <= 1;
+            dirty_bank[set_index] <= 0;
+            dmem_write <= 0;
+          end
         end
-        if(data_write_back_complete==1) begin
-          dirty_bank[set_index] <= 0;
-          cache_state<=`CACHE_IDLE;
-        end
-        if (data_ready) begin
-          // get data from mem
-          cache_state<=`CACHE_DATA_RECIEVED;
-          data_bank[set_index] <= input_set;
-          tag_bank[set_index] <= inst_tag;
-          valid_bank[set_index] <= 1;
-          dirty_bank[set_index] <= 0;
-          dmem_write <= 0;
-        end
-      end
 
-      if (mem_rw == 1) begin // write
-        // write-allocate
-        if(cache_state==`CACHE_DATA_RECIEVED||cache_state==`CACHE_IDLE) begin
-          dirty_bank[set_index] <= 1;
-          case (block_offset)
-            0: begin
-              data_bank[set_index][31:0] <= input_line;
-            end
-            1: begin
-              data_bank[set_index][63:32] <= input_line;
-            end
-            2: begin
-              data_bank[set_index][95:64] <= input_line;
-            end
-            3: begin
-              data_bank[set_index][127:96] <= input_line;
-            end
-          endcase
+        if (mem_rw == 1) begin // write
+          // write-allocate
+          if(cache_state==`CACHE_DATA_RECIEVED||cache_state==`CACHE_IDLE) begin
+            dirty_bank[set_index] <= 1;
+            case (block_offset)
+              0: begin
+                data_bank[set_index][31:0] <= input_line;
+              end
+              1: begin
+                data_bank[set_index][63:32] <= input_line;
+              end
+              2: begin
+                data_bank[set_index][95:64] <= input_line;
+              end
+              3: begin
+                data_bank[set_index][127:96] <= input_line;
+              end
+            endcase
+          end
         end
       end
     end
