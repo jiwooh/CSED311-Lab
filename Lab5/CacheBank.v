@@ -4,6 +4,7 @@ module CacheBank (
   // #(parameter LINE_SIZE = 16,
   //   parameter NUM_SETS = 8,
   //   parameter NUM_WAYS = 2) (
+    input bank_active,
     input reset,
     input clk,
     input mem_rw,
@@ -80,7 +81,7 @@ module CacheBank (
         /* verilator lint_on BLKSEQ */
       end
     end
-    else begin
+    else if (bank_active==1) begin
       if(is_input_valid) begin
         if (is_hit) begin // hit
           cache_state<=`CACHE_IDLE;

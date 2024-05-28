@@ -51,9 +51,7 @@ module Cache #(parameter LINE_SIZE = 16//,
     && is_data_mem_ready
     && counter > 5;
   
-  
-
-  CacheBank bank1 (
+  AssociativeBank bank1 (
     .reset(reset),
     .clk(clk),
     .mem_rw(mem_rw),
