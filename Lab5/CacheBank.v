@@ -1,3 +1,5 @@
+`include "cachestates.v"
+
 module CacheBank (
   // #(parameter LINE_SIZE = 16,
   //   parameter NUM_SETS = 8,
@@ -7,15 +9,19 @@ module CacheBank (
     input mem_rw,
     input [31:0] addr,
     input data_ready,
+    input is_input_valid,
+    input data_write_back_complete,
     input [127:0] input_set,
     input [31:0] input_line,
     output reg [127:0] output_set,
     output [31:0] output_line,
+    output [31:0] output_addr,
     output reg data_replaced,
     output reg data_is_dirty,
     output reg dmem_read,
     output reg dmem_write,
     output reg is_selected,
+    output reg [1:0] cache_state,
     output is_hit);
   // Wire declarations
   // C = 256 bytes -> logC = 10
@@ -63,32 +69,46 @@ module CacheBank (
     if (reset) begin
       data_replaced <= 0;
       data_is_dirty <= 0;
+      cache_state<=`CACHE_IDLE;
       for (i = 0; i < 8; i = i + 1) begin
         /* verilator lint_off BLKSEQ */
-        tag_bank[i] <= 0;
+        tag_bank[i] <= 25'b0;
         valid_bank[i] <= 0;
         dirty_bank[i] <= 0;
-        data_bank[i] <= 0;
+        data_bank[i] <= 128'b0;
         /* verilator lint_on BLKSEQ */
       end
     end
-
-    if (mem_rw == 1) begin // write
-      if (is_hit) begin // write hit -> write-back
+    if(is_input_valid) begin
+      if (is_hit) begin // hit
+        cache_state<=`CACHE_IDLE;
         dmem_read <= 0;
+        dmem_write <= 0;
       end
-      else begin // write miss -> write-allocate
-        dmem_read <= 1;
-        // request data
-        // data_replaced <=1; 
-        if (dirty_bank[set_index] == 1) begin // replace
+      else begin 
+        if (dirty_bank[set_index] == 1) begin
+          // write-back
+          cache_state<=`CACHE_WRITE_BACK_REQUEST;
           output_set <= data_bank[set_index];
+          output_addr <={tag_out, set_index, 4'b0000};
           data_is_dirty <= 1;
+          dmem_read <= 0; 
           dmem_write <= 1;
         end
-        else data_is_dirty <= 0;
+        else begin 
+          // allocate
+          cache_state<=`CACHE_WRITE_ALLOCATE_REQUEST;
+          dmem_read <= 1;
+          dmem_write <= 0;
+          data_is_dirty <= 0;
+        end
+        if(data_write_back_complete==1) begin
+          dirty_bank[set_index] <= 0;
+          cache_state<=`CACHE_IDLE;
+        end
         if (data_ready) begin
           // get data from mem
+          cache_state<=`CACHE_DATA_RECIEVED;
           data_bank[set_index] <= input_set;
           tag_bank[set_index] <= inst_tag;
           valid_bank[set_index] <= 1;
@@ -97,46 +117,27 @@ module CacheBank (
           dmem_write <= 0;
         end
       end
-      // write-allocate
-      dirty_bank[set_index] <= 1;
-      case (block_offset)
-        0: begin
-          data_bank[set_index][31:0] <= input_line;
-        end
-        1: begin
-          data_bank[set_index][63:32] <= input_line;
-        end
-        2: begin
-          data_bank[set_index][95:64] <= input_line;
-        end
-        3: begin
-          data_bank[set_index][127:96] <= input_line;
-        end
-      endcase
-    end else begin // read
-      if (is_hit) begin // read hit 
-        dmem_read <= 0;
-      end
-      else begin // read miss
-        dmem_read <= 1;
-        // request data
-        // data_replaced <=1;
-        if (data_ready) begin
-          if (dirty_bank[set_index] == 1) begin // replace
-            output_set <= data_bank[set_index];
-            data_is_dirty <= 1;
-            dmem_write <= 1;
-          end
-          else data_is_dirty <= 0;
-          // get data from mem
-          data_bank[set_index] <= input_set;
-          tag_bank[set_index] <= inst_tag;
-          valid_bank[set_index] <= 1;
-          dirty_bank[set_index] <= 0;
-          data_replaced <= 1;
-          dmem_write <= 0;
+
+      if (mem_rw == 1) begin // write
+        // write-allocate
+        if(cache_state==`CACHE_DATA_RECIEVED||cache_state==`CACHE_IDLE) begin
+          dirty_bank[set_index] <= 1;
+          case (block_offset)
+            0: begin
+              data_bank[set_index][31:0] <= input_line;
+            end
+            1: begin
+              data_bank[set_index][63:32] <= input_line;
+            end
+            2: begin
+              data_bank[set_index][95:64] <= input_line;
+            end
+            3: begin
+              data_bank[set_index][127:96] <= input_line;
+            end
+          endcase
         end
       end
-    end   
+    end
   end
 endmodule
