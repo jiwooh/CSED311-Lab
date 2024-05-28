@@ -27,7 +27,7 @@ module Cache #(parameter LINE_SIZE = 16//,
 
   wire is_data_mem_ready;
   //wire bank_index;
-
+  wire stall;
 
   wire [127:0] dmem_output_set;
   wire [127:0] bank_output_set;
@@ -50,9 +50,11 @@ module Cache #(parameter LINE_SIZE = 16//,
     (bank_state==`CACHE_WRITE_BACK_REQUEST) 
     && is_data_mem_ready
     && counter > 5;
+  assign stall = is_input_valid && !is_hit;
   
   AssociativeBank bank1 (
     .reset(reset),
+    .stall(stall),
     .clk(clk),
     .mem_rw(mem_rw),
     .addr(addr),
@@ -75,7 +77,7 @@ module Cache #(parameter LINE_SIZE = 16//,
     .reset(reset),
     .clk(clk),
 
-    .is_input_valid(is_input_valid && request_counter<5),
+    .is_input_valid(is_input_valid && request_counter<1),
     .addr((dmem_addr>>(`CLOG2(LINE_SIZE)))),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
     .mem_read(bank_dmem_read),
     .mem_write(bank_dmem_write),
