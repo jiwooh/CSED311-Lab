@@ -12,6 +12,8 @@ module Cache #(parameter LINE_SIZE = 16//,
     input mem_rw,
     input [31:0] din,
 
+    output integer total_count,
+    output integer miss_count,
     output is_ready,
     output is_output_valid,
     output [31:0] dout,
@@ -24,9 +26,13 @@ module Cache #(parameter LINE_SIZE = 16//,
   // bank control
   integer counter;
   integer request_counter;
+  integer stall_counter;
+  integer _total_count;
+  integer _miss_count;
 
   wire is_data_mem_ready;
   //wire bank_index;
+  wire stall;
 
 
   wire [127:0] dmem_output_set;
@@ -50,7 +56,11 @@ module Cache #(parameter LINE_SIZE = 16//,
     (bank_state==`CACHE_WRITE_BACK_REQUEST) 
     && is_data_mem_ready
     && counter > 5;
-  
+  assign stall = is_input_valid && !is_hit;
+
+  assign total_count = _total_count;
+  assign miss_count = _miss_count;
+
   CacheBank bank (
     .bank_active(1),
     .reset(reset),
@@ -94,6 +104,9 @@ module Cache #(parameter LINE_SIZE = 16//,
       if (reset) begin
         counter <= 0;
         request_counter <= 0;
+        stall_counter <= 0;
+        _total_count <= 0;
+        _miss_count <= 0;
       end
       else begin
         if(bank_state==`CACHE_WRITE_BACK_REQUEST&& is_input_valid) begin
@@ -108,6 +121,21 @@ module Cache #(parameter LINE_SIZE = 16//,
           counter <=0;
           request_counter <= 0;
         end
+
+        if(is_input_valid&&is_hit&&!stall) begin
+          _total_count<=_total_count+1;
+        end
+        else if(is_input_valid&&!is_hit&&stall_counter<1) begin
+          _miss_count<=_miss_count+1;
+        end
+
+        if(stall==0)begin 
+          stall_counter<=0;
+        end
+        else begin
+          stall_counter <= stall_counter+1;
+        end
+
       end
   end
 endmodule

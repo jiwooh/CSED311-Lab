@@ -11,6 +11,8 @@
 module cpu(input reset,       // positive reset signal
            input clk,         // clock signal
            output reg is_halted, // Whehther to finish simulation
+           output integer total_count,
+           output integer miss_count,
            output [31:0] print_reg [0:31]); // Whehther to finish simulation
     /***** Wire declarations *****/
     // 1. pc
@@ -335,6 +337,8 @@ module cpu(input reset,       // positive reset signal
               ((!EX_MEM_mem_read &&  EX_MEM_mem_write) ? 1 : 0)),
         .din(EX_MEM_dmem_data),
         //output
+        .total_count(total_count),
+        .miss_count(miss_count),
         .is_ready(cache_is_ready),
         .is_output_valid(cache_is_output_valid),
         .dout(dmemOutput),
